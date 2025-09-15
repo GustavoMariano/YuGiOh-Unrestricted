@@ -1,0 +1,174 @@
+﻿@page "/"
+@using YuGiOh_Unrestricted.Models
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+@using Microsoft.AspNetCore.SignalR.Client
+
+<h3>Yu-Gi-Oh! Unrestricted (Prototype)</h3>
+
+@if (match == null || match.Players.Count < 2)
+{
+    <div>
+        <input @bind="playerName" placeholder="Enter your name" />
+        <button @onclick="Join">Join Match</button>
+    </div>
+}
+else
+{
+    <div class="board">
+
+        @* --- Adversário (topo) --- *@
+        @{
+            var opponent = match.Players.First(p => p.ConnectionId != connectionId);
+        }
+        <div class="player player-top">
+
+            @* Mão do adversário (não visível) *@
+            <div class="hand">
+                <h5>Opponent Hand:</h5>
+                <div class="hand-cards">
+                    @for (int i = 0; i < opponent.Hand.Count; i++)
+                    {
+                        <div class="card">(hidden)</div>
+                    }
+                </div>
+            </div>
+
+            @* Deck + Spells *@
+            <div class="row">
+                <div class="deck" style="background-color:#4c2b27">Deck</div>
+                @for (int i = 0; i < 5; i++)
+                {
+                    <div class="card-slot" style="background-color:#79dee1">
+                        @(opponent.SpellTrap.Count > i ? "(hidden)" : "(empty)")
+                    </div>
+                }
+            </div>
+
+            @* Graveyard + Monsters + FieldMagic *@
+            <div class="row">
+                <div class="graveyard" style="background-color:#8e94a6">Graveyard</div>
+                @for (int i = 0; i < 5; i++)
+                {
+                    <div class="card-slot" style="background-color:#bd6f5d">
+                        @(opponent.Field.Count > i ? (opponent.Field[i].IsDefense ? "(face down)" : opponent.Field[i].Name) : "(empty)")
+                    </div>
+                }
+                <div class="field-magic" style="background-color:#b1efb1">
+                    @(opponent.FieldMagic != null ? (opponent.FieldMagic.IsDefense ? "(face down)" : opponent.FieldMagic.Name) : "(empty)")
+                </div>
+            </div>
+
+            @* Dados do adversário *@
+            <div class="player-info" style="color:red">
+                <strong>@opponent.Name</strong> - LP: @opponent.LifePoints
+            </div>
+        </div>
+
+        @* --- Jogador logado (baixo) --- *@
+        @{
+            var self = match.Players.First(p => p.ConnectionId == connectionId);
+        }
+        <div class="player player-bottom">
+
+            @* Dados do jogador *@
+            <div class="player-info" style="color:blue">
+                <strong>@self.Name</strong> - LP: @self.LifePoints
+            </div>
+
+            @* FieldMagic + Monsters + Graveyard *@
+            <div class="row">
+                <div class="field-magic" style="background-color:#b1efb1">
+                    @(self.FieldMagic != null ? (self.FieldMagic.IsDefense ? "(face down)" : self.FieldMagic.Name) : "(empty)")
+                </div>
+                @for (int i = 0; i < 5; i++)
+                {
+                    <div class="card-slot" style="background-color:#bd6f5d">
+                        @(self.Field.Count > i ? (self.Field[i].IsDefense ? "(face down)" : self.Field[i].Name) : "(empty)")
+                    </div>
+                }
+                <div class="graveyard" style="background-color:#8e94a6">Graveyard</div>
+            </div>
+
+            @* Spells + Deck *@
+            <div class="row">
+                @for (int i = 0; i < 5; i++)
+                {
+                    <div class="card-slot" style="background-color:#79dee1">
+                        @(self.SpellTrap.Count > i ? self.SpellTrap[i].Name : "(empty)")
+                    </div>
+                }
+                <div class="deck" style="background-color:#4c2b27">
+                    Deck
+                    <button @onclick="() => DrawCard(self)">Draw</button> (@self.Deck.Count)
+                </div>
+            </div>
+
+            @* Mão do jogador *@
+            <div class="hand">
+                <h5>Your Hand:</h5>
+                <div class="hand-cards">
+                    @foreach (var c in self.Hand)
+                    {
+                        <div class="card">
+                            @c.Name
+                            <button @onclick="() => ToggleDefense(c)">Def</button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private HubConnection? hub;
+    private Match? match;
+    private string playerName = "";
+    private string? connectionId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("gamehub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hub.On<string>("SetConnectionId", (id) =>
+        {
+            connectionId = id;
+        });
+
+        hub.On<Match>("UpdateMatch", async (m) =>
+        {
+            match = m;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await hub.StartAsync();
+    }
+
+    private async Task Join()
+    {
+        if (hub != null && !string.IsNullOrWhiteSpace(playerName))
+            await hub.InvokeAsync("JoinMatch", playerName);
+    }
+
+    private async Task DrawCard(Player player)
+    {
+        if (hub != null && player.ConnectionId == connectionId)
+            await hub.InvokeAsync("DrawCard");
+    }
+
+    private void ToggleDefense(Card card)
+    {
+        card.IsDefense = !card.IsDefense;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hub != null)
+            await hub.DisposeAsync();
+    }
+}
