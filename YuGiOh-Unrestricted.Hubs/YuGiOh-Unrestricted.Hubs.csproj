@@ -1,19 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <RootNamespace>YuGiOh_Unrestricted.Hubs</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>YuGiOh_Unrestricted</RootNamespace>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\YuGiOh-Unrestricted.Core\YuGiOh-Unrestricted.Core.csproj" />
-    <ProjectReference Include="..\YuGiOh-Unrestricted.Hubs\YuGiOh-Unrestricted.Hubs.csproj" />
     <ProjectReference Include="..\YuGiOh-Unrestricted.Infrastructure\YuGiOh-Unrestricted.Infrastructure.csproj" />
   </ItemGroup>
 

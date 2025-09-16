@@ -1,138 +1,128 @@
 body {
     font-family: Arial, Helvetica, sans-serif;
+    background: #1a1a1a;
+    color: #fff;
     margin: 0;
-    padding: 0;
-    background-color: #1a1a1a;
-    color: white;
 }
 
-h3 {
-    text-align: center;
-    margin-top: 10px;
+.topbar {
+    background: #333;
+    padding: 10px;
+    position: sticky;
+    top: 0;
+}
+
+.body {
+    padding: 16px;
 }
 
 .board {
     display: flex;
     flex-direction: column;
+    gap: 20px;
     align-items: center;
-    gap: 15px;
-    padding: 10px;
 }
 
-/* Player areas */
 .player {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    width: 90%;
+    width: 95%;
     border: 2px solid #555;
+    border-radius: 10px;
     padding: 10px;
-    border-radius: 8px;
+    background: #222;
 }
 
-.player-info {
-    font-weight: bold;
-    font-size: 1.1rem;
+.player-top {
+    background: #2c2c2c;
 }
 
 .row {
     display: flex;
-    flex-direction: row;
-    gap: 5px;
+    gap: 6px;
     justify-content: center;
-    flex-wrap: nowrap;
 }
 
-.card-slot, .field-magic, .deck, .graveyard {
-    width: 80px;
-    height: 120px;
+.slot, .deck, .graveyard, .field-magic {
+    width: 88px;
+    height: 124px;
     border: 2px solid #333;
-    border-radius: 5px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
     text-align: center;
+    font-size: .85rem;
+    font-weight: 700;
+    color: #000;
 }
 
-/* Card types colors */
-.card-slot {
-    background-color: #bd6f5d; /* Monster */
+.monster {
+    background: #bd6f5d;
+}
+
+.spelltrap {
+    background: #79dee1;
 }
 
 .field-magic {
-    background-color: #b1efb1;
+    background: #b1efb1;
 }
 
 .deck {
-    background-color: #4c2b27;
-    position: relative;
+    background: #4c2b27;
+    color: #fff;
+    flex-direction: column;
 }
 
 .graveyard {
-    background-color: #8e94a6;
+    background: #8e94a6;
+    color: #fff;
 }
 
-.card {
-    width: 70px;
-    height: 100px;
-    border: 2px solid #222;
-    border-radius: 5px;
-    background-color: #79dee1; /* Magic card default */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.75rem;
-    text-align: center;
-}
-
-    .card button {
-        margin-top: 2px;
-        font-size: 0.7rem;
-        padding: 2px 4px;
-    }
-
-/* Hands */
 .hand {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
 }
 
 .hand-cards {
     display: flex;
-    flex-direction: row;
-    gap: 5px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
-/* Player top vs bottom */
-.player-top {
-    background-color: #2c2c2c;
-}
-
-.player-bottom {
-    background-color: #222;
-}
-
-/* Scrollable hand if many cards */
-.hand-cards {
-    overflow-x: auto;
-    padding: 5px;
-}
-
-/* Hover effect for cards */
-.card:hover {
-    transform: scale(1.1);
-    transition: transform 0.2s ease;
-}
-
-/* Deck & Graveyard text styling */
-.deck button {
-    margin-top: 5px;
-    font-size: 0.75rem;
+.card {
+    width: 84px;
+    height: 118px;
+    background: #79dee1;
+    color: #000;
+    border: 2px solid #333;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    text-align: center;
     cursor: pointer;
+}
+
+.draw-box {
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+}
+
+.player-info.me {
+    color: #2196f3;
+    font-weight: 700;
+}
+
+.player-info.opp {
+    color: #f44336;
+    font-weight: 700;
+}
+
+.join-container input {
+    margin-right: 6px;
 }

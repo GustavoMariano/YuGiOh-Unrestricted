@@ -1,0 +1,104 @@
+﻿@page "/deckbuilder/{DeckId:guid}"
+@inject IDeckService DecksSvc
+@inject ICardService CardsSvc
+@inject NavigationManager Nav
+@using YuGiOh_Unrestricted.Core.Models
+@using YuGiOh_Unrestricted.Core.Models.Enums
+@using YuGiOh_Unrestricted.Core.Services
+
+<h3>Deck Builder</h3>
+
+@if (deck == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <input @bind="deckName" />
+    <button @onclick="SaveName">Save Name</button>
+
+    <h4>Cards in Deck (@deck.Cards.Sum(c => c.Count))/50</h4>
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        @foreach (var dc in deck.Cards)
+        {
+            <div style="border:1px solid #555; padding:6px; width:160px;">
+                <img src="@dc.Card.ImageUrl" alt="@dc.Card.Name" style="width:100%; height:auto;" />
+                <div><strong>@dc.Card.Name</strong> x @dc.Count</div>
+                <div style="display:flex; gap:4px;">
+                    <button disabled="@(dc.Count >= DeckRules.MaxCopiesPerCard)" @onclick="() => AddCopy(dc.Card.Id)">+ copy</button>
+                    <button @onclick="() => RemoveCopy(dc.Card.Id)">- remove</button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <hr />
+    <h4>Add Cards</h4>
+    <select @bind="filterTypeText">
+        <option value="">All</option>
+        <option>Monster</option>
+        <option>Spell</option>
+        <option>Trap</option>
+        <option>Field</option>
+    </select>
+    <input @bind="searchTerm" placeholder="Name contains..." />
+    <button @onclick="Search">Search</button>
+
+    @if (results != null)
+    {
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+            @foreach (var c in results)
+            {
+                <div style="border:1px solid #555; padding:6px; width:160px;">
+                    <img src="@c.ImageUrl" alt="@c.Name" style="width:100%; height:auto;" />
+                    <div><strong>@c.Name</strong></div>
+                    <div style="display:flex; gap:4px;">
+                        <button @onclick="() => AddCopy(c.Id)" disabled="@(deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards)">Add</button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid DeckId { get; set; }
+
+    private YuGiOh_Unrestricted.Core.Models.Deck? deck;
+    private string deckName = "";
+
+    private string filterTypeText = "";
+    private string searchTerm = "";
+    private List<Card>? results;
+
+    protected override async Task OnInitializedAsync()
+    {
+        deck = await DecksSvc.GetDeckAsync(DeckId);
+        if (deck != null) deckName = deck.Name;
+    }
+
+    private async Task SaveName()
+    {
+        await DecksSvc.RenameDeckAsync(DeckId, deckName);
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+
+    private async Task AddCopy(Guid cardId)
+    {
+        var ok = await DecksSvc.AddCopyAsync(DeckId, cardId);
+        if (ok) deck = await DecksSvc.GetDeckAsync(DeckId);
+    }
+
+    private async Task RemoveCopy(Guid cardId)
+    {
+        await DecksSvc.RemoveCopyAsync(DeckId, cardId);
+        deck = await DecksSvc.GetDeckAsync(DeckId);
+    }
+
+    private async Task Search()
+    {
+        ECardType? t = null;
+        if (Enum.TryParse<ECardType>(filterTypeText, out var parsed)) t = parsed;
+        results = await CardsSvc.SearchAsync(t, searchTerm);
+    }
+}

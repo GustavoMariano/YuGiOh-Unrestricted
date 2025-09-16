@@ -1,0 +1,21 @@
+﻿using Microsoft.EntityFrameworkCore;
+using YuGiOh_Unrestricted.Core.Models;
+using YuGiOh_Unrestricted.Core.Models.Enums;
+using YuGiOh_Unrestricted.Infrastructure.Data;
+using YuGiOh_Unrestricted.Infrastructure.Services.Interfaces;
+
+namespace YuGiOh_Unrestricted.Infrastructure.Services.Implemetations;
+
+public class CardService : ICardService
+{
+    private readonly GameDbContext _db;
+    public CardService(GameDbContext db) => _db = db;
+
+    public async Task<List<Card>> SearchAsync(ECardType? type, string? nameLike, int take = 200)
+    {
+        var q = _db.Cards.AsQueryable();
+        if (type.HasValue) q = q.Where(c => c.Type == type.Value);
+        if (!string.IsNullOrWhiteSpace(nameLike)) q = q.Where(c => c.Name.Contains(nameLike));
+        return await q.OrderBy(c => c.Name).Take(take).ToListAsync();
+    }
+}

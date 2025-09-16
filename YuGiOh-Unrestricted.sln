@@ -1,9 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36429.23 d17.14
+VisualStudioVersion = 17.14.36429.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YuGiOh-Unrestricted", "YuGiOh-Unrestricted\YuGiOh-Unrestricted.csproj", "{7F23FD02-1BF0-49EC-ADF8-A1144371BE5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YuGiOh-Unrestricted.Core", "YuGiOh-Unrestricted.Core\YuGiOh-Unrestricted.Core.csproj", "{053845CB-F8F3-43A9-BE7E-FFD6073A29C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YuGiOh-Unrestricted.Infrastructure", "YuGiOh-Unrestricted.Infrastructure\YuGiOh-Unrestricted.Infrastructure.csproj", "{BB1FE259-28CC-4735-BA62-F01B0EE5FE75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YuGiOh-Unrestricted.Hubs", "YuGiOh-Unrestricted.Hubs\YuGiOh-Unrestricted.Hubs.csproj", "{AA38727B-6233-436E-9033-8AC6A92E54FE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +21,18 @@ Global
 		{7F23FD02-1BF0-49EC-ADF8-A1144371BE5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F23FD02-1BF0-49EC-ADF8-A1144371BE5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F23FD02-1BF0-49EC-ADF8-A1144371BE5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{053845CB-F8F3-43A9-BE7E-FFD6073A29C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{053845CB-F8F3-43A9-BE7E-FFD6073A29C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{053845CB-F8F3-43A9-BE7E-FFD6073A29C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{053845CB-F8F3-43A9-BE7E-FFD6073A29C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB1FE259-28CC-4735-BA62-F01B0EE5FE75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB1FE259-28CC-4735-BA62-F01B0EE5FE75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB1FE259-28CC-4735-BA62-F01B0EE5FE75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB1FE259-28CC-4735-BA62-F01B0EE5FE75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA38727B-6233-436E-9033-8AC6A92E54FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA38727B-6233-436E-9033-8AC6A92E54FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA38727B-6233-436E-9033-8AC6A92E54FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA38727B-6233-436E-9033-8AC6A92E54FE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

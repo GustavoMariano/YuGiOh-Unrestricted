@@ -1,0 +1,168 @@
+﻿@page "/battle/{Code}"
+@using Microsoft.AspNetCore.SignalR.Client
+@using YuGiOh_Unrestricted.Core.Models
+@inject NavigationManager Nav
+@inject AppState App
+@inject IDeckService DecksSvc
+
+<h3>Battle: @Code</h3>
+
+@if (match is null)
+{
+    <div class="join-container">
+        <input @bind="playerName" placeholder="Your nickname" />
+        <button @onclick="Join">Join</button>
+    </div>
+}
+else
+{
+    var self = match.GetByConn(connectionId ?? "");
+    var opp = match.GetOpponent(connectionId ?? "");
+
+    <div class="board">
+        @if (opp is not null)
+        {
+            <div class="player player-top">
+                <div class="hand">
+                    <h5>Opponent Hand</h5><div class="hand-cards">
+                        @for (int i = 0; i < opp.Hand.Count; i++)
+                        {
+                            <div class="card">(hidden)</div>
+                        }
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="deck">Deck (@opp.Deck.Count)</div>
+                    @for (int i = 0; i < 5; i++)
+                    {
+                        var c = opp.FieldSpellTraps.ElementAtOrDefault(i);
+                        <div class="slot spelltrap">@((c == null) ? "(empty)" : (c.IsFaceDown ? "(face down)" : c.Name))</div>
+                    }
+                </div>
+                <div class="row">
+                    <div class="graveyard">GY (@opp.Graveyard.Count)</div>
+                    @for (int i = 0; i < 5; i++)
+                    {
+                        var c = opp.FieldMonsters.ElementAtOrDefault(i);
+                        <div class="slot monster">@((c == null) ? "(empty)" : (c.IsFaceDown ? "(face down)" : c.Name))</div>
+                    }
+                    <div class="field-magic">@((opp.FieldMagic == null) ? "(empty)" : (opp.FieldMagic.IsFaceDown ? "(face down)" : opp.FieldMagic.Name))</div>
+                </div>
+                <div class="player-info opp"><strong>@opp.Name</strong> — LP: @opp.LifePoints</div>
+            </div>
+        }
+
+        @if (self is not null)
+        {
+            <div class="player player-bottom">
+                <div class="player-info me"><strong>@self.Name</strong> — LP: @self.LifePoints</div>
+
+                <div class="row">
+                    <div class="field-magic">@((self.FieldMagic == null) ? "(empty)" : self.FieldMagic.Name)</div>
+                    @for (int i = 0; i < 5; i++)
+                    {
+                        var c = self.FieldMonsters.ElementAtOrDefault(i);
+                        <div class="slot monster">@((c == null) ? "(empty)" : c.Name)</div>
+                    }
+                    <div class="graveyard">GY (@self.Graveyard.Count)</div>
+                </div>
+                <div class="row">
+                    @for (int i = 0; i < 5; i++)
+                    {
+                        var c = self.FieldSpellTraps.ElementAtOrDefault(i);
+                        <div class="slot spelltrap">@((c == null) ? "(empty)" : c.Name)</div>
+                    }
+                    <div class="deck">
+                        Deck (@self.Deck.Count)
+                        <div class="draw-box"><button @onclick="DrawOne">Draw 1</button></div>
+                    </div>
+                </div>
+
+                <div class="hand">
+                    <h5>Your Hand</h5><div class="hand-cards">
+                        @foreach (var c in self.Hand)
+                        {
+                            <div class="card">@c.Name</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* seleção de deck (somente se ainda não iniciou e não carregou deck) *@
+            @if (!(match.Started) && (self.Deck.Count == 0))
+            {
+                <hr />
+                <h4>Select your deck</h4>
+                @if (myDecks == null)
+                {
+                    <p>Loading decks...</p>
+                }
+                else
+                {
+                    @foreach (var d in myDecks)
+                    {
+                        var total = d.Cards.Sum(c => c.Count);
+                        <button disabled="@(total < 1)" @onclick="() => ChooseDeck(d.Id)">@d.Name (@total)</button>
+                    }
+                    <div style="margin-top:8px;">
+                        <button @onclick="StartIfReady">Start if ready</button>
+                    </div>
+                }
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Code { get; set; }
+
+    private HubConnection? hub;
+    private string? connectionId;
+    private RuntimeMatch? match;
+
+    private string playerName = "";
+    private List<YuGiOh_Unrestricted.Core.Models.Deck>? myDecks;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("/gamehub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hub.On<string>("SetConnectionId", id => connectionId = id);
+        hub.On<RuntimeMatch>("UpdateMatch", async m => { match = m; await InvokeAsync(StateHasChanged); });
+
+        await hub.StartAsync();
+
+        if (!string.IsNullOrWhiteSpace(Code))
+        {
+            await hub.InvokeAsync("JoinGroup", Code);
+        }
+
+        if (App.UserId != Guid.Empty)
+        {
+            myDecks = await DecksSvc.GetUserDecksAsync(App.UserId);
+        }
+    }
+
+    private async Task Join()
+    {
+        if (hub == null || string.IsNullOrWhiteSpace(Code)) return;
+        var name = string.IsNullOrWhiteSpace(App.Nickname) ? playerName : App.Nickname;
+        await hub.InvokeAsync("JoinBattle", Code, name);
+    }
+
+    private Task DrawOne()
+        => hub == null || string.IsNullOrWhiteSpace(Code) ? Task.CompletedTask : hub.InvokeAsync("DrawOne", Code);
+
+    private async Task ChooseDeck(Guid deckId)
+    {
+        if (hub == null || string.IsNullOrWhiteSpace(Code)) return;
+        await hub.InvokeAsync("SelectDeck", Code, deckId);
+    }
+
+    private Task StartIfReady()
+        => hub == null || string.IsNullOrWhiteSpace(Code) ? Task.CompletedTask : hub.InvokeAsync("StartIfReady", Code);
+}

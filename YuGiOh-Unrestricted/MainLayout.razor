@@ -1,3 +1,13 @@
 ﻿@inherits LayoutComponentBase
 
-<main> @Body </main>
+<div class="topbar">
+    <a href="/">Home</a> | <a href="/login">Login</a> | <a href="/lobby">Lobby</a> | <a href="/decks">Decks</a>
+    <span style="float:right">User: @App?.Nickname</span>
+</div>
+<div class="body">
+    @Body
+</div>
+
+@code {
+    [CascadingParameter] public AppState? App { get; set; }
+}

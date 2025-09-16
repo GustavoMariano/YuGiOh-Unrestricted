@@ -1,0 +1,30 @@
+﻿@page "/lobby"
+@inject NavigationManager Nav
+@inject AppState App
+
+<h3>Lobby</h3>
+
+@if (App.UserId == Guid.Empty)
+{
+    <p>Você precisa fazer login. <a href="/login">Login</a></p>
+}
+else
+{
+    <div class="join-container">
+        <input @bind="battleCode" placeholder="Battle code" />
+        <button @onclick="JoinBattle">Join Battle</button>
+        <button @onclick="GoDecks">Build Decks</button>
+    </div>
+}
+
+@code {
+    private string battleCode = "";
+
+    private void JoinBattle()
+    {
+        if (!string.IsNullOrWhiteSpace(battleCode))
+            Nav.NavigateTo($"/battle/{battleCode}");
+    }
+
+    private void GoDecks() => Nav.NavigateTo("/decks");
+}
