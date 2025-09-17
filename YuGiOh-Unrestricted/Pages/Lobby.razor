@@ -1,5 +1,4 @@
 ﻿@page "/lobby"
-@inject NavigationManager Nav
 @inject AppState App
 
 <h3>Lobby</h3>
@@ -10,33 +9,19 @@
 }
 else
 {
-    <EditForm Model="this" OnValidSubmit="JoinBattle">
-        <div class="join-container">
-            <input @bind="battleCode" placeholder="Battle code" />
-            <button type="submit">Join Battle</button>
-        </div>
-    </EditForm>
+    <div class="join-container" style="display:flex; gap:12px; align-items:center;">
+        <input @bind="battleCode" placeholder="Battle code" />
 
-    <EditForm Model="this" OnValidSubmit="GoDecks">
-        <div class="join-container">
-            <button type="submit">Build Decks</button>
-        </div>
-    </EditForm>
+        <!-- Join Battle sempre ativo -->
+        <NavLink class="btn" href="@($"/battle/{Uri.EscapeDataString(battleCode ?? string.Empty)}")">
+            Join Battle
+        </NavLink>
+
+        <!-- Build Decks -->
+        <NavLink class="btn" href="/decks">Build Decks</NavLink>
+    </div>
 }
 
 @code {
     private string battleCode = "";
-
-    public void JoinBattle()
-    {
-        Console.WriteLine($"[DEBUG] JoinBattle called with code={battleCode}");
-        if (!string.IsNullOrWhiteSpace(battleCode))
-            Nav.NavigateTo($"/battle/{battleCode}");
-    }
-
-    public void GoDecks()
-    {
-        Console.WriteLine("[DEBUG] GoDecks called");
-        Nav.NavigateTo("/decks");
-    }
 }
