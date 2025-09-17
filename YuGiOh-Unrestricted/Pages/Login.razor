@@ -1,36 +1,73 @@
 ﻿@page "/login"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager Nav
 @inject AppState App
 @inject YuGiOh_Unrestricted.Infrastructure.Data.GameDbContext Db
 
 <h3>Login</h3>
 
-<div class="join-container">
-    <input @bind="nickname" placeholder="Nickname" />
-    <input @bind="password" type="password" placeholder="Password" />
-    <button @onclick="DoLogin">Login</button>
-</div>
+<EditForm Model="@model" OnValidSubmit="@DoLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="join-container">
+        <InputText @bind-Value="model.Nickname" placeholder="Nickname" />
+        <InputText @bind-Value="model.Password" type="password" placeholder="Password" />
+        <button type="submit">Login</button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <p style="color:red">@message</p>
+    }
+</EditForm>
 
 @code {
-    private string nickname = "";
-    private string password = "";
+    private LoginVm model = new();
+    private string message = "";
 
     private async Task DoLogin()
     {
-        if (string.IsNullOrWhiteSpace(nickname) || string.IsNullOrWhiteSpace(password)) return;
+        // normalize
+        var nickname = (model.Nickname ?? "").Trim();
+        var password = (model.Password ?? "").Trim();
 
-        // login simples (sem Identity) – cria user se não existir
-        var user = Db.Users.FirstOrDefault(u => u.Nickname == nickname);
+        if (string.IsNullOrWhiteSpace(nickname) || string.IsNullOrWhiteSpace(password))
+        {
+            message = "Please enter nickname and password.";
+            return;
+        }
+
+        // case-insensitive nickname match
+        var user = await Db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Nickname.ToLower() == nickname.ToLower());
+
         if (user == null)
         {
-            user = new YuGiOh_Unrestricted.Core.Models.User { Nickname = nickname, PasswordHash = password };
-            Db.Users.Add(user);
-            await Db.SaveChangesAsync();
+            message = "User not found.";
+            return;
+        }
+
+        if (user.PasswordHash != password)
+        {
+            message = "Invalid password.";
+            return;
         }
 
         App.Nickname = user.Nickname;
         App.UserId = user.Id;
 
         Nav.NavigateTo("/lobby");
+    }
+
+    private class LoginVm
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string? Nickname { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string? Password { get; set; }
     }
 }

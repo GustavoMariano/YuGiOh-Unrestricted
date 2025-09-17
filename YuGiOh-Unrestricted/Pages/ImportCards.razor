@@ -1,0 +1,140 @@
+﻿@page "/import-cards"
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
+@inject YuGiOh_Unrestricted.Infrastructure.Data.GameDbContext Db
+
+<h3>Import Cards</h3>
+
+<EditForm Model="@model" OnValidSubmit="@ImportCardsAsync">
+    <DataAnnotationsValidator />
+    <div class="import-container" style="display:flex; gap:12px; align-items:center;">
+        <InputFile OnChange="OnFileSelected" />
+        <button type="submit">Import</button>
+    </div>
+    <ValidationSummary />
+</EditForm>
+
+<p>@status</p>
+
+@code {
+    private ImportFormModel model = new();
+    private IBrowserFile? selectedFile;
+    private string status = "Waiting for file...";
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        model.FileName = selectedFile?.Name ?? string.Empty;
+        status = selectedFile is null ? "No file selected." : $"Selected file: {selectedFile.Name}";
+    }
+
+    private async Task ImportCardsAsync()
+    {
+        status = "Starting import...";
+
+        if (selectedFile is null)
+        {
+            status = "No file selected.";
+            return;
+        }
+
+        if (!string.Equals(selectedFile.Name, "NewCards.json", StringComparison.Ordinal))
+        {
+            status = "Invalid file name. Must be NewCards.json.";
+            return;
+        }
+
+        try
+        {
+            using var stream = selectedFile.OpenReadStream(10_000_000); // 10 MB
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var root = JsonSerializer.Deserialize<Root>(json, options);
+
+            if (root?.data is null || root.data.Count == 0)
+            {
+                status = "No cards found in JSON.";
+                return;
+            }
+
+            var added = 0;
+            var skipped = 0;
+
+            foreach (var c in root.data)
+            {
+                if (await Db.Cards.AnyAsync(x => x.CardId == c.id))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                var imgUrl =
+                    c.card_images?.FirstOrDefault(x => x.id == c.id)?.image_url
+                    ?? c.card_images?.FirstOrDefault()?.image_url
+                    ?? "";
+
+                var card = new YuGiOh_Unrestricted.Core.Models.Card
+                {
+                    Id = Guid.NewGuid(),
+                    CardId = c.id,
+                    Name = c.name,
+                    Description = c.desc ?? "",
+                    Attack = c.atk,
+                    Defense = c.def,
+                    Level = c.level,
+                    Type = MapType(c.type),
+                    ImageUrl = imgUrl
+                };
+
+                Db.Cards.Add(card);
+                added++;
+            }
+
+            await Db.SaveChangesAsync();
+            status = $"Import complete. Added {added} new cards, skipped {skipped}.";
+        }
+        catch (Exception ex)
+        {
+            status = $"Error: {ex.Message}";
+        }
+    }
+
+    private YuGiOh_Unrestricted.Core.Models.Enums.ECardType MapType(string? type)
+    {
+        if (string.IsNullOrWhiteSpace(type)) return YuGiOh_Unrestricted.Core.Models.Enums.ECardType.Monster;
+        if (type.Contains("Trap", StringComparison.OrdinalIgnoreCase)) return YuGiOh_Unrestricted.Core.Models.Enums.ECardType.Trap;
+        if (type.Contains("Spell", StringComparison.OrdinalIgnoreCase)) return YuGiOh_Unrestricted.Core.Models.Enums.ECardType.Spell;
+        return YuGiOh_Unrestricted.Core.Models.Enums.ECardType.Monster;
+    }
+
+    private class ImportFormModel
+    {
+        public string? FileName { get; set; }
+    }
+
+    private class Root
+    {
+        public List<CardJson> data { get; set; } = new();
+    }
+
+    private class CardJson
+    {
+        public int id { get; set; }
+        public string name { get; set; } = "";
+        public string type { get; set; } = "";
+        public string? desc { get; set; }
+        public int? atk { get; set; }
+        public int? def { get; set; }
+        public int? level { get; set; }
+        public List<CardImage>? card_images { get; set; }
+    }
+
+    private class CardImage
+    {
+        public int id { get; set; }
+        public string image_url { get; set; } = "";
+    }
+}

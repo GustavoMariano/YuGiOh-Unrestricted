@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using YuGiOh_Unrestricted.Hubs;
 using YuGiOh_Unrestricted.Infrastructure.Data;
-using YuGiOh_Unrestricted.Infrastructure.Services.Implemetations;
+using YuGiOh_Unrestricted.Infrastructure.Services.Implementations;
 using YuGiOh_Unrestricted.Infrastructure.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);

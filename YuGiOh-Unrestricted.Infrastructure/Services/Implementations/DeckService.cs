@@ -4,7 +4,7 @@ using YuGiOh_Unrestricted.Core.Services;
 using YuGiOh_Unrestricted.Infrastructure.Data;
 using YuGiOh_Unrestricted.Infrastructure.Services.Interfaces;
 
-namespace YuGiOh_Unrestricted.Infrastructure.Services.Implemetations;
+namespace YuGiOh_Unrestricted.Infrastructure.Services.Implementations;
 
 public class DeckService : IDeckService
 {

@@ -6,25 +6,37 @@
 
 @if (App.UserId == Guid.Empty)
 {
-    <p>Você precisa fazer login. <a href="/login">Login</a></p>
+    <p>You need to login. <a href="/login">Login</a></p>
 }
 else
 {
-    <div class="join-container">
-        <input @bind="battleCode" placeholder="Battle code" />
-        <button @onclick="JoinBattle">Join Battle</button>
-        <button @onclick="GoDecks">Build Decks</button>
-    </div>
+    <EditForm Model="this" OnValidSubmit="JoinBattle">
+        <div class="join-container">
+            <input @bind="battleCode" placeholder="Battle code" />
+            <button type="submit">Join Battle</button>
+        </div>
+    </EditForm>
+
+    <EditForm Model="this" OnValidSubmit="GoDecks">
+        <div class="join-container">
+            <button type="submit">Build Decks</button>
+        </div>
+    </EditForm>
 }
 
 @code {
     private string battleCode = "";
 
-    private void JoinBattle()
+    public void JoinBattle()
     {
+        Console.WriteLine($"[DEBUG] JoinBattle called with code={battleCode}");
         if (!string.IsNullOrWhiteSpace(battleCode))
             Nav.NavigateTo($"/battle/{battleCode}");
     }
 
-    private void GoDecks() => Nav.NavigateTo("/decks");
+    public void GoDecks()
+    {
+        Console.WriteLine("[DEBUG] GoDecks called");
+        Nav.NavigateTo("/decks");
+    }
 }
