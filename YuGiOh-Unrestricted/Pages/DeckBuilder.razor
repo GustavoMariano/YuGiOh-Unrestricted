@@ -30,7 +30,6 @@ else
                     <div style="margin-top:6px;"><strong>@dc.Card.Name</strong> <span>× @dc.Count</span></div>
 
                     <div style="display:flex; gap:8px; justify-content:center; margin-top:8px;">
-                        <!-- Add copy -->
                         <a class="btn"
                            href="@BuildActionUrl("add", dc.Card.Id)"
                            style="pointer-events:@(dc.Count >= DeckRules.MaxCopiesPerCard ? "none" : "auto");
@@ -38,7 +37,6 @@ else
                             + copy
                         </a>
 
-                        <!-- Remove copy -->
                         <a class="btn" href="@BuildActionUrl("remove", dc.Card.Id)">- remove</a>
                     </div>
                 </div>
@@ -54,7 +52,6 @@ else
 
     <h4>Add Cards</h4>
 
-    <!-- Busca via GET (sem onclick) -->
     <form method="get" action="@($"/deckbuilder/{DeckId}")" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
         <select name="type" value="@filterTypeText" style="min-width:120px;">
             <option value="">All</option>
@@ -111,34 +108,29 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        // 1) Sempre carrega o deck atual
         deck = await DecksSvc.GetDeckAsync(DeckId);
 
-        // 2) Lê a query atual
         var uri = new Uri(Nav.Uri);
         var query = QueryHelpers.ParseQuery(uri.Query);
 
-        // --- Ações add/remove via query --------------------------------------
         if (query.TryGetValue("add", out var addStr) && Guid.TryParse(addStr, out var addId))
         {
             var ok = await DecksSvc.AddCopyAsync(DeckId, addId);
-            // recarrega estado para refletir na UI sem F5
             deck = await DecksSvc.GetDeckAsync(DeckId);
-            results = results; // mantém resultados da busca, se houver
-            StateHasChanged();
-            return; // não navega, só atualiza estado
+
+            Nav.NavigateTo($"/deckbuilder/{DeckId}", replace: true);
+            return;
         }
 
         if (query.TryGetValue("remove", out var remStr) && Guid.TryParse(remStr, out var remId))
         {
             await DecksSvc.RemoveCopyAsync(DeckId, remId);
             deck = await DecksSvc.GetDeckAsync(DeckId);
-            results = results;
-            StateHasChanged();
-            return; // não navega, só atualiza estado
+
+            Nav.NavigateTo($"/deckbuilder/{DeckId}", replace: true);
+            return;
         }
 
-        // --- Busca por query (?type=&q=) -------------------------------------
         filterTypeText = query.TryGetValue("type", out var tVal) ? tVal.ToString() : "";
         searchTerm = query.TryGetValue("q", out var qVal) ? qVal.ToString() : "";
 
@@ -155,11 +147,10 @@ else
         }
         else
         {
-            results = null; // nenhuma busca feita
+            results = null;
         }
     }
 
-    // Adiciona um timestamp para garantir que cada clique gere URL única
     private string BuildActionUrl(string action, Guid cardId)
-        => $"/deckbuilder/{DeckId}?{action}={cardId}&ts={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+        => $"/deckbuilder/{DeckId}?{action}={cardId}";
 }
