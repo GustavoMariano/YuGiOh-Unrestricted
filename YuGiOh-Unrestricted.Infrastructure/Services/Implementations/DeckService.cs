@@ -55,13 +55,12 @@ public class DeckService : IDeckService
         if (dc == null)
         {
             dc = new DeckCard { DeckId = deckId, CardId = cardId, Count = 1 };
-            _db.Entry(dc).State = EntityState.Added;
-            d.Cards.Add(dc);
+            _db.DeckCards.Add(dc);
         }
         else
         {
             dc.Count++;
-            _db.Entry(dc).State = EntityState.Modified;
+            _db.DeckCards.Update(dc);
         }
 
         await _db.SaveChangesAsync();
@@ -76,7 +75,11 @@ public class DeckService : IDeckService
         if (dc == null) return;
 
         dc.Count--;
-        if (dc.Count <= 0) d.Cards.Remove(dc);
+        if (dc.Count <= 0)
+            _db.DeckCards.Remove(dc);
+        else
+            _db.DeckCards.Update(dc);
+
         await _db.SaveChangesAsync();
     }
 }

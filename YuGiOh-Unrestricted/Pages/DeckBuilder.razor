@@ -18,26 +18,39 @@ else
 {
     <h4>Deck: @deck.Name</h4>
 
+    <form method="post" action="@($"/deckbuilder/{DeckId}/rename")" style="display:flex; gap:8px; align-items:center; margin:8px 0;">
+        <input name="name" value="@deck.Name" />
+        <button type="submit">Save Name</button>
+    </form>
+
     <h4>Cards in Deck (@deck.Cards.Sum(c => c.Count))/50</h4>
 
     <div style="display:flex; flex-wrap:wrap; gap:16px;">
         @if (deck.Cards.Any())
         {
-            @foreach (var dc in deck.Cards)
+            @foreach (var dc in deck.Cards.OrderBy(c => c.Card.Name))
             {
                 <div style="border:1px solid #555; padding:8px; width:200px; text-align:center;">
                     <img src="@dc.Card.ImageUrl" alt="@dc.Card.Name" style="width:100%; height:auto;" />
-                    <div style="margin-top:6px;"><strong>@dc.Card.Name</strong> <span>× @dc.Count</span></div>
+                    <div style="margin-top:6px;"><strong>@dc.Card.Name</strong> × @dc.Count</div>
 
                     <div style="display:flex; gap:8px; justify-content:center; margin-top:8px;">
-                        <a class="btn"
-                           href="@BuildActionUrl("add", dc.Card.Id)"
-                           style="pointer-events:@(dc.Count >= DeckRules.MaxCopiesPerCard ? "none" : "auto");
-                                              opacity:@(dc.Count >= DeckRules.MaxCopiesPerCard ? "0.5" : "1");">
-                            + copy
-                        </a>
+                        <form method="post" action="@($"/deckbuilder/{DeckId}/add")">
+                            <input type="hidden" name="cardId" value="@dc.Card.Id" />
+                            @if (dc.Count >= DeckRules.MaxCopiesPerCard || deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards)
+                            {
+                                <button type="submit" disabled>+ copy</button>
+                            }
+                            else
+                            {
+                                <button type="submit">+ copy</button>
+                            }
+                        </form>
 
-                        <a class="btn" href="@BuildActionUrl("remove", dc.Card.Id)">- remove</a>
+                        <form method="post" action="@($"/deckbuilder/{DeckId}/remove")">
+                            <input type="hidden" name="cardId" value="@dc.Card.Id" />
+                            <button type="submit">- remove</button>
+                        </form>
                     </div>
                 </div>
             }
@@ -63,7 +76,6 @@ else
         <input name="q" value="@searchTerm" placeholder="Name contains..." />
 
         <button type="submit">Search</button>
-        <input type="hidden" name="keep" value="1" />
     </form>
 
     @if (results is null)
@@ -84,14 +96,17 @@ else
                     <img src="@c.ImageUrl" alt="@c.Name" style="width:100%; height:auto;" />
                     <div style="margin-top:6px;"><strong>@c.Name</strong></div>
 
-                    <div style="margin-top:8px;">
-                        <a class="btn"
-                           href="@BuildActionUrl("add", c.Id)"
-                           style="pointer-events:@(deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards ? "none" : "auto");
-                                              opacity:@(deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards ? "0.5" : "1");">
-                            Add
-                        </a>
-                    </div>
+                    <form method="post" action="@($"/deckbuilder/{DeckId}/add")" style="margin-top:8px;">
+                        <input type="hidden" name="cardId" value="@c.Id" />
+                        @if (deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards)
+                        {
+                            <button type="submit" disabled>Add</button>
+                        }
+                        else
+                        {
+                            <button type="submit">Add</button>
+                        }
+                    </form>
                 </div>
             }
         </div>
@@ -113,24 +128,6 @@ else
         var uri = new Uri(Nav.Uri);
         var query = QueryHelpers.ParseQuery(uri.Query);
 
-        if (query.TryGetValue("add", out var addStr) && Guid.TryParse(addStr, out var addId))
-        {
-            var ok = await DecksSvc.AddCopyAsync(DeckId, addId);
-            deck = await DecksSvc.GetDeckAsync(DeckId);
-
-            Nav.NavigateTo($"/deckbuilder/{DeckId}", replace: true);
-            return;
-        }
-
-        if (query.TryGetValue("remove", out var remStr) && Guid.TryParse(remStr, out var remId))
-        {
-            await DecksSvc.RemoveCopyAsync(DeckId, remId);
-            deck = await DecksSvc.GetDeckAsync(DeckId);
-
-            Nav.NavigateTo($"/deckbuilder/{DeckId}", replace: true);
-            return;
-        }
-
         filterTypeText = query.TryGetValue("type", out var tVal) ? tVal.ToString() : "";
         searchTerm = query.TryGetValue("q", out var qVal) ? qVal.ToString() : "";
 
@@ -150,7 +147,4 @@ else
             results = null;
         }
     }
-
-    private string BuildActionUrl(string action, Guid cardId)
-        => $"/deckbuilder/{DeckId}?{action}={cardId}";
 }
