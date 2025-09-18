@@ -48,14 +48,6 @@ else
                     <div style="margin-top:8px;">
                         <form method="get" action="@($"/deckbuilder/{DeckId}")">
                             <input type="hidden" name="details" value="@dc.Card.Id" />
-                            @if (!string.IsNullOrEmpty(filterTypeText))
-                            {
-                                <input type="hidden" name="type" value="@filterTypeText" />
-                            }
-                            @if (!string.IsNullOrEmpty(searchTerm))
-                            {
-                                <input type="hidden" name="q" value="@searchTerm" />
-                            }
                             <button type="submit">View Details</button>
                         </form>
                     </div>
@@ -68,35 +60,35 @@ else
         }
     </div>
 
-    @if (selectedCard is not null)
+    @if (detailCard is not null)
     {
-        <dialog open id="cardDetails" style="border:none; padding:0; max-width:860px; width:90%;">
-            <div style="display:flex; gap:20px; padding:16px; background:#111; color:#eee; border-radius:8px;">
-                <img src="@selectedCard.ImageUrl" alt="@selectedCard.Name" style="width:320px; height:auto; border-radius:6px;" />
-                <div style="max-width:480px;">
-                    <h5 style="margin:0 0 8px 0; font-size:20px;">@selectedCard.Name</h5>
-                    @if (selectedCard.Level is not null && selectedCard.Level > 0)
+        <dialog open style="padding:20px; border:1px solid #333; max-width:760px; width:95%;">
+            <div style="display:flex; gap:20px;">
+                <img src="@detailCard.ImageUrl" alt="@detailCard.Name" style="width:320px; height:auto;" />
+                <div style="flex:1;">
+                    <h3 style="margin:0 0 8px 0;">@detailCard.Name</h3>
+                    @if (detailCard.Level.HasValue && detailCard.Level > 0)
                     {
-                        <div><strong>Level:</strong> @selectedCard.Level</div>
+                        <p><b>Level:</b> @detailCard.Level</p>
                     }
-                    @if (selectedCard.Attack is not null && selectedCard.Attack > 0)
+                    @if (detailCard.Attack.HasValue && detailCard.Attack > 0)
                     {
-                        <div><strong>ATK:</strong> @selectedCard.Attack</div>
+                        <p><b>ATK:</b> @detailCard.Attack</p>
                     }
-                    @if (selectedCard.Defense is not null && selectedCard.Defense > 0)
+                    @if (detailCard.Defense.HasValue && detailCard.Defense > 0)
                     {
-                        <div><strong>DEF:</strong> @selectedCard.Defense</div>
+                        <p><b>DEF:</b> @detailCard.Defense</p>
                     }
-                    <div style="margin-top:8px; white-space:pre-wrap; line-height:1.4;">@selectedCard.Description</div>
+                    <p style="white-space:pre-wrap;">@detailCard.Description</p>
 
-                    <form method="get" action="@($"/deckbuilder/{DeckId}")" style="margin-top:14px;">
-                        @if (!string.IsNullOrEmpty(filterTypeText))
-                        {
-                            <input type="hidden" name="type" value="@filterTypeText" />
-                        }
-                        @if (!string.IsNullOrEmpty(searchTerm))
+                    <form method="get" action="@($"/deckbuilder/{DeckId}")" style="margin-top:12px; text-align:right;">
+                        @if (!string.IsNullOrWhiteSpace(searchTerm))
                         {
                             <input type="hidden" name="q" value="@searchTerm" />
+                        }
+                        @if (!string.IsNullOrWhiteSpace(filterTypeText))
+                        {
+                            <input type="hidden" name="type" value="@filterTypeText" />
                         }
                         <button type="submit">Close</button>
                     </form>
@@ -146,14 +138,8 @@ else
 
                     <form method="get" action="@($"/deckbuilder/{DeckId}")" style="margin-top:6px;">
                         <input type="hidden" name="details" value="@c.Id" />
-                        @if (!string.IsNullOrEmpty(filterTypeText))
-                        {
-                            <input type="hidden" name="type" value="@filterTypeText" />
-                        }
-                        @if (!string.IsNullOrEmpty(searchTerm))
-                        {
-                            <input type="hidden" name="q" value="@searchTerm" />
-                        }
+                        <input type="hidden" name="q" value="@searchTerm" />
+                        <input type="hidden" name="type" value="@filterTypeText" />
                         <button type="submit">View Details</button>
                     </form>
                 </div>
@@ -169,7 +155,7 @@ else
     private string filterTypeText = "";
     private string searchTerm = "";
     private List<Card>? results;
-    private Card? selectedCard;
+    private Card? detailCard;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -181,7 +167,7 @@ else
         filterTypeText = query.TryGetValue("type", out var tVal) ? tVal.ToString() : "";
         searchTerm = query.TryGetValue("q", out var qVal) ? qVal.ToString() : "";
 
-        if (query.ContainsKey("q") || query.ContainsKey("type"))
+        if (!string.IsNullOrWhiteSpace(searchTerm) || !string.IsNullOrWhiteSpace(filterTypeText))
         {
             ECardType? t = null;
             if (!string.IsNullOrWhiteSpace(filterTypeText) && Enum.TryParse<ECardType>(filterTypeText, out var parsed))
@@ -194,11 +180,12 @@ else
             results = null;
         }
 
-        selectedCard = null;
+        detailCard = null;
         if (query.TryGetValue("details", out var detStr) && Guid.TryParse(detStr, out var detId))
         {
-            selectedCard = deck?.Cards.Select(x => x.Card).FirstOrDefault(c => c.Id == detId)
-                           ?? results?.FirstOrDefault(c => c.Id == detId);
+            detailCard =
+                deck?.Cards.Select(x => x.Card).FirstOrDefault(c => c.Id == detId)
+                ?? results?.FirstOrDefault(c => c.Id == detId);
         }
     }
 }
