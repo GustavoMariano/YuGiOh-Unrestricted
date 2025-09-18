@@ -5,5 +5,6 @@ namespace YuGiOh_Unrestricted.Infrastructure.Services.Interfaces;
 
 public interface ICardService
 {
-    Task<List<Card>> SearchAsync(ECardType? type, string? nameLike, int take = 200);
+    Task<List<Card>> SearchAsync(ECardType? type, string? nameLike);
+    Task<Card?> GetCardAsync(Guid cardId);
 }

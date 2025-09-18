@@ -11,11 +11,16 @@ public class CardService : ICardService
     private readonly GameDbContext _db;
     public CardService(GameDbContext db) => _db = db;
 
-    public async Task<List<Card>> SearchAsync(ECardType? type, string? nameLike, int take = 200)
+    public async Task<List<Card>> SearchAsync(ECardType? type, string? nameLike)
     {
         var q = _db.Cards.AsQueryable();
         if (type.HasValue) q = q.Where(c => c.Type == type.Value);
         if (!string.IsNullOrWhiteSpace(nameLike)) q = q.Where(c => c.Name.Contains(nameLike));
-        return await q.OrderBy(c => c.Name).Take(take).ToListAsync();
+        return await q.OrderBy(c => c.Name).ToListAsync();
+    }
+
+    public async Task<Card?> GetCardAsync(Guid cardId)
+    {
+        return await _db.Cards.FirstOrDefaultAsync(c => c.Id == cardId);
     }
 }

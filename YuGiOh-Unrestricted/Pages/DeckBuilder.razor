@@ -30,26 +30,33 @@ else
         {
             @foreach (var dc in deck.Cards.OrderBy(c => c.Card.Name))
             {
-                <div style="border:1px solid #555; padding:8px; width:200px; text-align:center;">
+                <div style="border:1px solid #555; padding:8px; width:220px; text-align:center;">
                     <img src="@dc.Card.ImageUrl" alt="@dc.Card.Name" style="width:100%; height:auto;" />
                     <div style="margin-top:6px;"><strong>@dc.Card.Name</strong> × @dc.Count</div>
 
                     <div style="display:flex; gap:8px; justify-content:center; margin-top:8px;">
                         <form method="post" action="@($"/deckbuilder/{DeckId}/add")">
                             <input type="hidden" name="cardId" value="@dc.Card.Id" />
-                            @if (dc.Count >= DeckRules.MaxCopiesPerCard || deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards)
-                            {
-                                <button type="submit" disabled>+ copy</button>
-                            }
-                            else
-                            {
-                                <button type="submit">+ copy</button>
-                            }
+                            <button type="submit" disabled="@(dc.Count >= DeckRules.MaxCopiesPerCard || deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards)">+ copy</button>
                         </form>
-
                         <form method="post" action="@($"/deckbuilder/{DeckId}/remove")">
                             <input type="hidden" name="cardId" value="@dc.Card.Id" />
                             <button type="submit">- remove</button>
+                        </form>
+                    </div>
+
+                    <div style="margin-top:8px;">
+                        <form method="get" action="@($"/deckbuilder/{DeckId}")">
+                            <input type="hidden" name="details" value="@dc.Card.Id" />
+                            @if (!string.IsNullOrEmpty(filterTypeText))
+                            {
+                                <input type="hidden" name="type" value="@filterTypeText" />
+                            }
+                            @if (!string.IsNullOrEmpty(searchTerm))
+                            {
+                                <input type="hidden" name="q" value="@searchTerm" />
+                            }
+                            <button type="submit">View Details</button>
                         </form>
                     </div>
                 </div>
@@ -60,6 +67,43 @@ else
             <p>No cards in this deck yet.</p>
         }
     </div>
+
+    @if (selectedCard is not null)
+    {
+        <dialog open id="cardDetails" style="border:none; padding:0; max-width:860px; width:90%;">
+            <div style="display:flex; gap:20px; padding:16px; background:#111; color:#eee; border-radius:8px;">
+                <img src="@selectedCard.ImageUrl" alt="@selectedCard.Name" style="width:320px; height:auto; border-radius:6px;" />
+                <div style="max-width:480px;">
+                    <h5 style="margin:0 0 8px 0; font-size:20px;">@selectedCard.Name</h5>
+                    @if (selectedCard.Level is not null && selectedCard.Level > 0)
+                    {
+                        <div><strong>Level:</strong> @selectedCard.Level</div>
+                    }
+                    @if (selectedCard.Attack is not null && selectedCard.Attack > 0)
+                    {
+                        <div><strong>ATK:</strong> @selectedCard.Attack</div>
+                    }
+                    @if (selectedCard.Defense is not null && selectedCard.Defense > 0)
+                    {
+                        <div><strong>DEF:</strong> @selectedCard.Defense</div>
+                    }
+                    <div style="margin-top:8px; white-space:pre-wrap; line-height:1.4;">@selectedCard.Description</div>
+
+                    <form method="get" action="@($"/deckbuilder/{DeckId}")" style="margin-top:14px;">
+                        @if (!string.IsNullOrEmpty(filterTypeText))
+                        {
+                            <input type="hidden" name="type" value="@filterTypeText" />
+                        }
+                        @if (!string.IsNullOrEmpty(searchTerm))
+                        {
+                            <input type="hidden" name="q" value="@searchTerm" />
+                        }
+                        <button type="submit">Close</button>
+                    </form>
+                </div>
+            </div>
+        </dialog>
+    }
 
     <hr />
 
@@ -74,7 +118,6 @@ else
         </select>
 
         <input name="q" value="@searchTerm" placeholder="Name contains..." />
-
         <button type="submit">Search</button>
     </form>
 
@@ -92,20 +135,26 @@ else
         <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:10px;">
             @foreach (var c in results)
             {
-                <div style="border:1px solid #555; padding:8px; width:200px; text-align:center;">
+                <div style="border:1px solid #555; padding:8px; width:220px; text-align:center;">
                     <img src="@c.ImageUrl" alt="@c.Name" style="width:100%; height:auto;" />
                     <div style="margin-top:6px;"><strong>@c.Name</strong></div>
 
                     <form method="post" action="@($"/deckbuilder/{DeckId}/add")" style="margin-top:8px;">
                         <input type="hidden" name="cardId" value="@c.Id" />
-                        @if (deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards)
+                        <button type="submit" disabled="@(deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards)">Add</button>
+                    </form>
+
+                    <form method="get" action="@($"/deckbuilder/{DeckId}")" style="margin-top:6px;">
+                        <input type="hidden" name="details" value="@c.Id" />
+                        @if (!string.IsNullOrEmpty(filterTypeText))
                         {
-                            <button type="submit" disabled>Add</button>
+                            <input type="hidden" name="type" value="@filterTypeText" />
                         }
-                        else
+                        @if (!string.IsNullOrEmpty(searchTerm))
                         {
-                            <button type="submit">Add</button>
+                            <input type="hidden" name="q" value="@searchTerm" />
                         }
+                        <button type="submit">View Details</button>
                     </form>
                 </div>
             }
@@ -120,6 +169,7 @@ else
     private string filterTypeText = "";
     private string searchTerm = "";
     private List<Card>? results;
+    private Card? selectedCard;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -134,17 +184,21 @@ else
         if (query.ContainsKey("q") || query.ContainsKey("type"))
         {
             ECardType? t = null;
-            if (!string.IsNullOrWhiteSpace(filterTypeText) &&
-                Enum.TryParse<ECardType>(filterTypeText, out var parsed))
-            {
+            if (!string.IsNullOrWhiteSpace(filterTypeText) && Enum.TryParse<ECardType>(filterTypeText, out var parsed))
                 t = parsed;
-            }
 
             results = await CardsSvc.SearchAsync(t, searchTerm);
         }
         else
         {
             results = null;
+        }
+
+        selectedCard = null;
+        if (query.TryGetValue("details", out var detStr) && Guid.TryParse(detStr, out var detId))
+        {
+            selectedCard = deck?.Cards.Select(x => x.Card).FirstOrDefault(c => c.Id == detId)
+                           ?? results?.FirstOrDefault(c => c.Id == detId);
         }
     }
 }
