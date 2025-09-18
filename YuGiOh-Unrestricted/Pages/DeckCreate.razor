@@ -1,0 +1,30 @@
+﻿@page "/decks/create"
+@inject AppState App
+@inject IDeckService DecksSvc
+@inject NavigationManager Nav
+@using YuGiOh_Unrestricted.Core.Models
+
+<h3>Creating deck…</h3>
+<p>Please wait…</p>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (App.UserId == Guid.Empty)
+        {
+            Nav.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        var decks = await DecksSvc.GetUserDecksAsync(App.UserId);
+
+        if (decks.Count >= 3)
+        {
+            Nav.NavigateTo("/decks", forceLoad: true);
+            return;
+        }
+
+        var newDeck = await DecksSvc.CreateDeckAsync(App.UserId, $"Deck {decks.Count + 1}");
+        Nav.NavigateTo($"/deckbuilder/{newDeck.Id}", forceLoad: true);
+    }
+}

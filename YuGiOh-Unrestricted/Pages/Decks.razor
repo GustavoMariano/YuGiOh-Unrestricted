@@ -2,14 +2,15 @@
 @inject AppState App
 @inject IDeckService DecksSvc
 @inject NavigationManager Nav
+@using YuGiOh_Unrestricted.Core.Models
 
 <h3>Your Decks</h3>
 
 @if (App.UserId == Guid.Empty)
 {
-    <p>Faça login primeiro. <a href="/login">Login</a></p>
+    <p>Please login first. <a href="/login">Login</a></p>
 }
-else if (decks == null)
+else if (decks is null)
 {
     <p>Loading...</p>
 }
@@ -20,30 +21,31 @@ else
         {
             <div style="border:1px solid #666; padding:10px; width:260px;">
                 <strong>@d.Name</strong> (<span>@d.Cards.Sum(c => c.Count)</span>/50)
-                <div><button @onclick="() => Open(d.Id)">Open</button></div>
+                <div style="margin-top:8px;">
+                    <!-- Abrir DeckBuilder direto -->
+                    <NavLink class="btn" href="@($"/deckbuilder/{d.Id}")">Open</NavLink>
+                </div>
             </div>
         }
+
         @if (decks.Count < 3)
         {
-            <div><button @onclick="Create">Create new deck</button></div>
+            <div style="border:1px dashed #666; padding:10px; width:260px; display:flex; align-items:center; justify-content:center;">
+                <!-- Criar deck via rota dedicada -->
+                <NavLink class="btn" href="/decks/create">Create new deck</NavLink>
+            </div>
         }
     </div>
 }
 
 @code {
-    private List<YuGiOh_Unrestricted.Core.Models.Deck>? decks;
+    private List<Deck>? decks;
 
     protected override async Task OnInitializedAsync()
     {
         if (App.UserId != Guid.Empty)
+        {
             decks = await DecksSvc.GetUserDecksAsync(App.UserId);
+        }
     }
-
-    private async Task Create()
-    {
-        var d = await DecksSvc.CreateDeckAsync(App.UserId, $"Deck {decks!.Count + 1}");
-        Nav.NavigateTo($"/deckbuilder/{d.Id}");
-    }
-
-    private void Open(Guid id) => Nav.NavigateTo($"/deckbuilder/{id}");
 }

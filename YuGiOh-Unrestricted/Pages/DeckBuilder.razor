@@ -2,58 +2,98 @@
 @inject IDeckService DecksSvc
 @inject ICardService CardsSvc
 @inject NavigationManager Nav
+
+@using Microsoft.AspNetCore.WebUtilities
 @using YuGiOh_Unrestricted.Core.Models
 @using YuGiOh_Unrestricted.Core.Models.Enums
 @using YuGiOh_Unrestricted.Core.Services
 
 <h3>Deck Builder</h3>
 
-@if (deck == null)
+@if (deck is null)
 {
     <p>Loading...</p>
 }
 else
 {
-    <input @bind="deckName" />
-    <button @onclick="SaveName">Save Name</button>
+    <h4>Deck: @deck.Name</h4>
 
     <h4>Cards in Deck (@deck.Cards.Sum(c => c.Count))/50</h4>
-    <div style="display:flex; flex-wrap:wrap; gap:8px;">
-        @foreach (var dc in deck.Cards)
+
+    <div style="display:flex; flex-wrap:wrap; gap:16px;">
+        @if (deck.Cards.Any())
         {
-            <div style="border:1px solid #555; padding:6px; width:160px;">
-                <img src="@dc.Card.ImageUrl" alt="@dc.Card.Name" style="width:100%; height:auto;" />
-                <div><strong>@dc.Card.Name</strong> x @dc.Count</div>
-                <div style="display:flex; gap:4px;">
-                    <button disabled="@(dc.Count >= DeckRules.MaxCopiesPerCard)" @onclick="() => AddCopy(dc.Card.Id)">+ copy</button>
-                    <button @onclick="() => RemoveCopy(dc.Card.Id)">- remove</button>
+            @foreach (var dc in deck.Cards)
+            {
+                <div style="border:1px solid #555; padding:8px; width:200px; text-align:center;">
+                    <img src="@dc.Card.ImageUrl" alt="@dc.Card.Name" style="width:100%; height:auto;" />
+                    <div style="margin-top:6px;"><strong>@dc.Card.Name</strong> <span>× @dc.Count</span></div>
+
+                    <div style="display:flex; gap:8px; justify-content:center; margin-top:8px;">
+                        <!-- Add copy -->
+                        <a class="btn"
+                           href="@BuildActionUrl("add", dc.Card.Id)"
+                           style="pointer-events:@(dc.Count >= DeckRules.MaxCopiesPerCard ? "none" : "auto");
+                                              opacity:@(dc.Count >= DeckRules.MaxCopiesPerCard ? "0.5" : "1");">
+                            + copy
+                        </a>
+
+                        <!-- Remove copy -->
+                        <a class="btn" href="@BuildActionUrl("remove", dc.Card.Id)">- remove</a>
+                    </div>
                 </div>
-            </div>
+            }
+        }
+        else
+        {
+            <p>No cards in this deck yet.</p>
         }
     </div>
 
     <hr />
-    <h4>Add Cards</h4>
-    <select @bind="filterTypeText">
-        <option value="">All</option>
-        <option>Monster</option>
-        <option>Spell</option>
-        <option>Trap</option>
-        <option>Field</option>
-    </select>
-    <input @bind="searchTerm" placeholder="Name contains..." />
-    <button @onclick="Search">Search</button>
 
-    @if (results != null)
+    <h4>Add Cards</h4>
+
+    <!-- Busca via GET (sem onclick) -->
+    <form method="get" action="@($"/deckbuilder/{DeckId}")" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <select name="type" value="@filterTypeText" style="min-width:120px;">
+            <option value="">All</option>
+            <option value="Monster">Monster</option>
+            <option value="Spell">Spell</option>
+            <option value="Trap">Trap</option>
+        </select>
+
+        <input name="q" value="@searchTerm" placeholder="Name contains..." />
+
+        <button type="submit">Search</button>
+        <input type="hidden" name="keep" value="1" />
+    </form>
+
+    @if (results is null)
     {
-        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+        <p style="color:gray; margin-top:6px;">No search performed yet.</p>
+    }
+    else if (results.Count == 0)
+    {
+        <p style="color:tomato; margin-top:6px;">No cards found.</p>
+    }
+    else
+    {
+        <h5 style="margin-top:14px;">Search Results</h5>
+        <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:10px;">
             @foreach (var c in results)
             {
-                <div style="border:1px solid #555; padding:6px; width:160px;">
+                <div style="border:1px solid #555; padding:8px; width:200px; text-align:center;">
                     <img src="@c.ImageUrl" alt="@c.Name" style="width:100%; height:auto;" />
-                    <div><strong>@c.Name</strong></div>
-                    <div style="display:flex; gap:4px;">
-                        <button @onclick="() => AddCopy(c.Id)" disabled="@(deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards)">Add</button>
+                    <div style="margin-top:6px;"><strong>@c.Name</strong></div>
+
+                    <div style="margin-top:8px;">
+                        <a class="btn"
+                           href="@BuildActionUrl("add", c.Id)"
+                           style="pointer-events:@(deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards ? "none" : "auto");
+                                              opacity:@(deck.Cards.Sum(x => x.Count) >= DeckRules.MaxCards ? "0.5" : "1");">
+                            Add
+                        </a>
                     </div>
                 </div>
             }
@@ -64,41 +104,62 @@ else
 @code {
     [Parameter] public Guid DeckId { get; set; }
 
-    private YuGiOh_Unrestricted.Core.Models.Deck? deck;
-    private string deckName = "";
-
+    private Deck? deck;
     private string filterTypeText = "";
     private string searchTerm = "";
     private List<Card>? results;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        // 1) Sempre carrega o deck atual
         deck = await DecksSvc.GetDeckAsync(DeckId);
-        if (deck != null) deckName = deck.Name;
+
+        // 2) Lê a query atual
+        var uri = new Uri(Nav.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        // --- Ações add/remove via query --------------------------------------
+        if (query.TryGetValue("add", out var addStr) && Guid.TryParse(addStr, out var addId))
+        {
+            var ok = await DecksSvc.AddCopyAsync(DeckId, addId);
+            // recarrega estado para refletir na UI sem F5
+            deck = await DecksSvc.GetDeckAsync(DeckId);
+            results = results; // mantém resultados da busca, se houver
+            StateHasChanged();
+            return; // não navega, só atualiza estado
+        }
+
+        if (query.TryGetValue("remove", out var remStr) && Guid.TryParse(remStr, out var remId))
+        {
+            await DecksSvc.RemoveCopyAsync(DeckId, remId);
+            deck = await DecksSvc.GetDeckAsync(DeckId);
+            results = results;
+            StateHasChanged();
+            return; // não navega, só atualiza estado
+        }
+
+        // --- Busca por query (?type=&q=) -------------------------------------
+        filterTypeText = query.TryGetValue("type", out var tVal) ? tVal.ToString() : "";
+        searchTerm = query.TryGetValue("q", out var qVal) ? qVal.ToString() : "";
+
+        if (query.ContainsKey("q") || query.ContainsKey("type"))
+        {
+            ECardType? t = null;
+            if (!string.IsNullOrWhiteSpace(filterTypeText) &&
+                Enum.TryParse<ECardType>(filterTypeText, out var parsed))
+            {
+                t = parsed;
+            }
+
+            results = await CardsSvc.SearchAsync(t, searchTerm);
+        }
+        else
+        {
+            results = null; // nenhuma busca feita
+        }
     }
 
-    private async Task SaveName()
-    {
-        await DecksSvc.RenameDeckAsync(DeckId, deckName);
-        Nav.NavigateTo(Nav.Uri, forceLoad: true);
-    }
-
-    private async Task AddCopy(Guid cardId)
-    {
-        var ok = await DecksSvc.AddCopyAsync(DeckId, cardId);
-        if (ok) deck = await DecksSvc.GetDeckAsync(DeckId);
-    }
-
-    private async Task RemoveCopy(Guid cardId)
-    {
-        await DecksSvc.RemoveCopyAsync(DeckId, cardId);
-        deck = await DecksSvc.GetDeckAsync(DeckId);
-    }
-
-    private async Task Search()
-    {
-        ECardType? t = null;
-        if (Enum.TryParse<ECardType>(filterTypeText, out var parsed)) t = parsed;
-        results = await CardsSvc.SearchAsync(t, searchTerm);
-    }
+    // Adiciona um timestamp para garantir que cada clique gere URL única
+    private string BuildActionUrl(string action, Guid cardId)
+        => $"/deckbuilder/{DeckId}?{action}={cardId}&ts={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
 }

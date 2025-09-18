@@ -52,8 +52,17 @@ public class DeckService : IDeckService
         if (!DeckRules.CanAddCard(d, cardId)) return false;
 
         var dc = d.Cards.FirstOrDefault(x => x.CardId == cardId);
-        if (dc == null) d.Cards.Add(new DeckCard { CardId = cardId, Count = 1 });
-        else dc.Count++;
+        if (dc == null)
+        {
+            dc = new DeckCard { DeckId = deckId, CardId = cardId, Count = 1 };
+            _db.Entry(dc).State = EntityState.Added;
+            d.Cards.Add(dc);
+        }
+        else
+        {
+            dc.Count++;
+            _db.Entry(dc).State = EntityState.Modified;
+        }
 
         await _db.SaveChangesAsync();
         return true;
