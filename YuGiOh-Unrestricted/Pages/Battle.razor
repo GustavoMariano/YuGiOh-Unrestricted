@@ -57,8 +57,8 @@
             <span>You: @(((self?.IsReady ?? false) ? "Ready" : "Not ready"))</span>
             @if (match.Players.Count == 2)
             {
-                var opp = match.GetOpponent(connectionId ?? "");
-                <span> • Opponent: @(((opp?.IsReady ?? false) ? "Ready" : "Not ready"))</span>
+                var oppReady = match.GetOpponent(connectionId ?? "")?.IsReady ?? false;
+                <span> • Opponent: @(oppReady ? "Ready" : "Not ready")</span>
             }
         </div>
     }
@@ -75,10 +75,10 @@
             <div class="player player-top">
                 <div class="hand">
                     <h5>Opponent Hand</h5>
-                    <div class="hand-cards">
+                    <div class="hand-cards cards-row">
                         @for (int i = 0; i < opp.Hand.Count; i++)
                         {
-                            <div class="card">(hidden)</div>
+                            <img class="card-img" src="@cardBack" alt="Card back" />
                         }
                     </div>
                 </div>
@@ -137,10 +137,10 @@
 
                 <div class="hand">
                     <h5>Your Hand</h5>
-                    <div class="hand-cards">
+                    <div class="hand-cards cards-row">
                         @foreach (var c in self.Hand)
                         {
-                            <div class="card">@c.Name</div>
+                            <img class="card-img" src="@(string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
                         }
                     </div>
                 </div>
@@ -157,6 +157,7 @@
     private RuntimeMatch? match;
     private List<DeckOption>? deckOptions;
     private bool joined;
+    private string cardBack = "/img/card-back.jpg";
 
     private sealed class DeckOption
     {
