@@ -1,73 +1,15 @@
 ﻿@page "/login"
-@using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Components.Forms
-@inject NavigationManager Nav
-@inject AppState App
-@inject YuGiOh_Unrestricted.Infrastructure.Data.GameDbContext Db
 
 <h3>Login</h3>
 
-<EditForm Model="@model" OnValidSubmit="@DoLogin">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="join-container">
-        <InputText @bind-Value="model.Nickname" placeholder="Nickname" />
-        <InputText @bind-Value="model.Password" type="password" placeholder="Password" />
+<form method="post" action="/auth/login">
+    <div style="display:flex; flex-direction:column; gap:8px; max-width:320px;">
+        <input name="nickname" placeholder="Nickname" />
+        <input name="password" placeholder="Password" type="password" />
         <button type="submit">Login</button>
     </div>
+</form>
 
-    @if (!string.IsNullOrEmpty(message))
-    {
-        <p style="color:red">@message</p>
-    }
-</EditForm>
-
-@code {
-    private LoginVm model = new();
-    private string message = "";
-
-    private async Task DoLogin()
-    {
-        // normalize
-        var nickname = (model.Nickname ?? "").Trim();
-        var password = (model.Password ?? "").Trim();
-
-        if (string.IsNullOrWhiteSpace(nickname) || string.IsNullOrWhiteSpace(password))
-        {
-            message = "Please enter nickname and password.";
-            return;
-        }
-
-        // case-insensitive nickname match
-        var user = await Db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Nickname.ToLower() == nickname.ToLower());
-
-        if (user == null)
-        {
-            message = "User not found.";
-            return;
-        }
-
-        if (user.PasswordHash != password)
-        {
-            message = "Invalid password.";
-            return;
-        }
-
-        App.Nickname = user.Nickname;
-        App.UserId = user.Id;
-
-        Nav.NavigateTo("/lobby");
-    }
-
-    private class LoginVm
-    {
-        [System.ComponentModel.DataAnnotations.Required]
-        public string? Nickname { get; set; }
-
-        [System.ComponentModel.DataAnnotations.Required]
-        public string? Password { get; set; }
-    }
-}
+<form method="post" action="/auth/logout" style="margin-top:12px;">
+    <button type="submit">Logout</button>
+</form>

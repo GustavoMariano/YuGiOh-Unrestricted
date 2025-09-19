@@ -1,4 +1,8 @@
-﻿@page "/battle/{Code}"
+﻿@page "/battle/{Code?}"
+@page "/battle"
+@using System
+@using System.Collections.Generic
+@using System.Linq
 @using Microsoft.AspNetCore.SignalR.Client
 @using YuGiOh_Unrestricted.Core.Models
 @inject NavigationManager Nav
@@ -7,14 +11,60 @@
 
 <h3>Battle: @Code</h3>
 
+<iframe name="silent" style="display:none;"></iframe>
+
 @if (match is null)
 {
     <div class="join-container">
-        <input @bind="playerName" placeholder="Your nickname" />
-        <button @onclick="Join">Join</button>
+        <p>Waiting for server...</p>
     </div>
 }
-else
+
+@if (match is not null && !match.Started)
+{
+    var self = match.GetByConn(connectionId ?? "");
+
+    <hr />
+    <h4>Select your deck</h4>
+
+    @if (deckOptions is null)
+    {
+        <p>Loading decks...</p>
+    }
+    else if (deckOptions.Count == 0)
+    {
+        <p>No decks found. <a href="/decks">Go to Decks</a></p>
+    }
+    else
+    {
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            @foreach (var d in deckOptions)
+            {
+                <form method="post" target="silent" action="@($"/battle/{Code}/select-deck")">
+                    <input type="hidden" name="deckId" value="@d.Id" />
+                    <input type="hidden" name="userId" value="@App.UserId" />
+                    <button type="submit" disabled="@(d.Total < 1 || (self?.IsReady ?? false))">@d.Name (@d.Total)</button>
+                </form>
+            }
+        </div>
+        <div style="margin-top:8px;">
+            <form method="post" target="silent" action="@($"/battle/{Code}/ready")">
+                <input type="hidden" name="userId" value="@App.UserId" />
+                <button type="submit" disabled="@(self == null || ((self?.Deck.Count ?? 0) < 1) || self.IsReady)">@((self?.IsReady ?? false) ? "Waiting..." : "Ready")</button>
+            </form>
+        </div>
+        <div style="margin-top:8px; font-size:12px; opacity:.75;">
+            <span>You: @(((self?.IsReady ?? false) ? "Ready" : "Not ready"))</span>
+            @if (match.Players.Count == 2)
+            {
+                var opp = match.GetOpponent(connectionId ?? "");
+                <span> • Opponent: @(((opp?.IsReady ?? false) ? "Ready" : "Not ready"))</span>
+            }
+        </div>
+    }
+}
+
+@if (match is not null && match.Started)
 {
     var self = match.GetByConn(connectionId ?? "");
     var opp = match.GetOpponent(connectionId ?? "");
@@ -24,7 +74,8 @@ else
         {
             <div class="player player-top">
                 <div class="hand">
-                    <h5>Opponent Hand</h5><div class="hand-cards">
+                    <h5>Opponent Hand</h5>
+                    <div class="hand-cards">
                         @for (int i = 0; i < opp.Hand.Count; i++)
                         {
                             <div class="card">(hidden)</div>
@@ -75,12 +126,18 @@ else
                     }
                     <div class="deck">
                         Deck (@self.Deck.Count)
-                        <div class="draw-box"><button @onclick="DrawOne">Draw 1</button></div>
+                        <div class="draw-box">
+                            <form method="post" target="silent" action="@($"/battle/{Code}/draw")">
+                                <input type="hidden" name="userId" value="@App.UserId" />
+                                <button type="submit">Draw 1</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
                 <div class="hand">
-                    <h5>Your Hand</h5><div class="hand-cards">
+                    <h5>Your Hand</h5>
+                    <div class="hand-cards">
                         @foreach (var c in self.Hand)
                         {
                             <div class="card">@c.Name</div>
@@ -88,28 +145,6 @@ else
                     </div>
                 </div>
             </div>
-
-            @* seleção de deck (somente se ainda não iniciou e não carregou deck) *@
-            @if (!(match.Started) && (self.Deck.Count == 0))
-            {
-                <hr />
-                <h4>Select your deck</h4>
-                @if (myDecks == null)
-                {
-                    <p>Loading decks...</p>
-                }
-                else
-                {
-                    @foreach (var d in myDecks)
-                    {
-                        var total = d.Cards.Sum(c => c.Count);
-                        <button disabled="@(total < 1)" @onclick="() => ChooseDeck(d.Id)">@d.Name (@total)</button>
-                    }
-                    <div style="margin-top:8px;">
-                        <button @onclick="StartIfReady">Start if ready</button>
-                    </div>
-                }
-            }
         }
     </div>
 }
@@ -120,12 +155,23 @@ else
     private HubConnection? hub;
     private string? connectionId;
     private RuntimeMatch? match;
+    private List<DeckOption>? deckOptions;
+    private bool joined;
 
-    private string playerName = "";
-    private List<YuGiOh_Unrestricted.Core.Models.Deck>? myDecks;
+    private sealed class DeckOption
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = "";
+        public int Total { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        if (string.IsNullOrWhiteSpace(Code))
+            Code = query["code"];
+
         hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("/gamehub"))
             .WithAutomaticReconnect()
@@ -139,30 +185,31 @@ else
         if (!string.IsNullOrWhiteSpace(Code))
         {
             await hub.InvokeAsync("JoinGroup", Code);
+            await hub.InvokeAsync("RequestSync", Code);
         }
+    }
 
-        if (App.UserId != Guid.Empty)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!joined && hub != null && !string.IsNullOrWhiteSpace(Code) && App.UserId != Guid.Empty)
         {
-            myDecks = await DecksSvc.GetUserDecksAsync(App.UserId);
+            await hub.InvokeAsync("JoinBattle", Code, App.Nickname, App.UserId);
+            await hub.InvokeAsync("RequestSync", Code);
+            joined = true;
+
+            if (deckOptions == null)
+            {
+                var decks = await DecksSvc.GetUserDecksAsync(App.UserId);
+                deckOptions = decks?
+                    .Select(d => new DeckOption
+                    {
+                        Id = d.Id,
+                        Name = d.Name,
+                        Total = d.Cards?.Sum(c => c.Count) ?? 0
+                    })
+                    .ToList() ?? new List<DeckOption>();
+                StateHasChanged();
+            }
         }
     }
-
-    private async Task Join()
-    {
-        if (hub == null || string.IsNullOrWhiteSpace(Code)) return;
-        var name = string.IsNullOrWhiteSpace(App.Nickname) ? playerName : App.Nickname;
-        await hub.InvokeAsync("JoinBattle", Code, name);
-    }
-
-    private Task DrawOne()
-        => hub == null || string.IsNullOrWhiteSpace(Code) ? Task.CompletedTask : hub.InvokeAsync("DrawOne", Code);
-
-    private async Task ChooseDeck(Guid deckId)
-    {
-        if (hub == null || string.IsNullOrWhiteSpace(Code)) return;
-        await hub.InvokeAsync("SelectDeck", Code, deckId);
-    }
-
-    private Task StartIfReady()
-        => hub == null || string.IsNullOrWhiteSpace(Code) ? Task.CompletedTask : hub.InvokeAsync("StartIfReady", Code);
 }

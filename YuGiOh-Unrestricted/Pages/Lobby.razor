@@ -9,16 +9,17 @@
 }
 else
 {
-    <div class="join-container" style="display:flex; gap:12px; align-items:center;">
-        <input @bind="battleCode" placeholder="Battle code" />
+    <div class="lobby-actions" style="display:flex; flex-direction:column; gap:16px; max-width:320px;">
+        <form method="post" action="/lobby/create">
+            <button type="submit" class="btn">Create Battle</button>
+        </form>
 
-        <!-- Join Battle sempre ativo -->
-        <NavLink class="btn" href="@($"/battle/{Uri.EscapeDataString(battleCode ?? string.Empty)}")">
-            Join Battle
-        </NavLink>
+        <form method="post" action="/lobby/join">
+            <input name="code" placeholder="Battle code" value="@battleCode" />
+            <button type="submit" class="btn">Join Battle</button>
+        </form>
 
-        <!-- Build Decks -->
-        <NavLink class="btn" href="/decks">Build Decks</NavLink>
+        <a class="btn" href="/decks">Build Decks</a>
     </div>
 }
 

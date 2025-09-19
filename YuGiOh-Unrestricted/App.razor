@@ -1,17 +1,32 @@
-﻿<CascadingValue Value="appState">
-    <Router AppAssembly="@typeof(App).Assembly"
-            AdditionalAssemblies="new[] { typeof(YuGiOh_Unrestricted.Pages.ImportCards).Assembly }">
+﻿@using Microsoft.AspNetCore.Components.Routing
+@inject AppState State
+@inject IHttpContextAccessor HttpCtx
+
+<CascadingValue Value="State" IsFixed="false">
+    <Router AppAssembly="@typeof(App).Assembly" PreferExactMatches="true">
         <Found Context="routeData">
             <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
             <LayoutView Layout="@typeof(MainLayout)">
-                <p style="padding:20px;">Sorry, there's nothing at this address.</p>
+                <p>Sorry, there’s nothing at this address.</p>
             </LayoutView>
         </NotFound>
     </Router>
 </CascadingValue>
 
 @code {
-    [Inject] public AppState appState { get; set; } = default!;
+    protected override void OnInitialized()
+    {
+        var ctx = HttpCtx.HttpContext;
+        var uid = ctx?.Request.Cookies["uid"];
+        var nick = ctx?.Request.Cookies["nick"];
+
+        if (Guid.TryParse(uid, out var userId) && !string.IsNullOrWhiteSpace(nick))
+        {
+            State.UserId = userId;
+            State.Nickname = nick;
+        }
+    }
 }

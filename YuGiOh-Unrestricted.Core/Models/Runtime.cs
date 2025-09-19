@@ -16,7 +16,6 @@ public class RuntimeCard
     public int? Level { get; set; }
     public string Description { get; set; } = "";
     public string ImageUrl { get; set; } = "";
-
     public bool IsFaceDown { get; set; }
     public bool IsDefense { get; set; }
     public bool IsRevealed { get; set; }
@@ -24,10 +23,11 @@ public class RuntimeCard
 
 public class RuntimePlayer
 {
+    public Guid UserId { get; set; }
     public string ConnectionId { get; set; } = "";
     public string Name { get; set; } = "";
     public int LifePoints { get; set; } = 8000;
-
+    public bool IsReady { get; set; } = false;
     public List<RuntimeCard> Deck { get; set; } = new();
     public List<RuntimeCard> Hand { get; set; } = new();
     public List<RuntimeCard?> FieldMonsters { get; set; } = new(new RuntimeCard?[5]);
@@ -45,4 +45,5 @@ public class RuntimeMatch
 
     public RuntimePlayer? GetByConn(string connId) => Players.FirstOrDefault(p => p.ConnectionId == connId);
     public RuntimePlayer? GetOpponent(string connId) => Players.FirstOrDefault(p => p.ConnectionId != connId);
+    public RuntimePlayer? GetByUser(Guid userId) => Players.FirstOrDefault(p => p.UserId == userId);
 }
