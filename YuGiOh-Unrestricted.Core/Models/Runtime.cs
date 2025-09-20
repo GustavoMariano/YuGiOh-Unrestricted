@@ -28,6 +28,9 @@ public class RuntimePlayer
     public string Name { get; set; } = "";
     public int LifePoints { get; set; } = 8000;
     public bool IsReady { get; set; } = false;
+    public string LastCoin { get; set; } = "";
+    public string LastDice { get; set; } = "";
+
     public List<RuntimeCard> Deck { get; set; } = new();
     public List<RuntimeCard> Hand { get; set; } = new();
     public List<RuntimeCard?> FieldMonsters { get; set; } = new(new RuntimeCard?[5]);

@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using YuGiOh_Unrestricted.Core.Models;
 using YuGiOh_Unrestricted.Infrastructure.Data;
 
@@ -18,6 +22,8 @@ public interface IMatchRuntime
     Task MoveCardAsync(string code, string cardId, Guid targetUserId, ZoneType zone, int targetIndex, DeckPosition deckPos);
     Task ShuffleDeckAsync(string code, Guid userId);
     Task AdjustLifeAsync(string code, Guid targetUserId, int delta);
+    Task TossCoinAsync(string code, Guid userId);
+    Task RollDiceAsync(string code, Guid userId);
     RuntimeMatch GetOrCreate(string code);
 }
 
@@ -201,6 +207,30 @@ public class MatchRuntime : IMatchRuntime
             var p = m.GetByUser(targetUserId);
             if (p == null) return Task.CompletedTask;
             p.LifePoints += delta;
+        }
+        return Broadcast(code);
+    }
+
+    public Task TossCoinAsync(string code, Guid userId)
+    {
+        lock (_lock)
+        {
+            if (!_matches.TryGetValue(code, out var m)) return Task.CompletedTask;
+            var p = m.GetByUser(userId);
+            if (p == null) return Task.CompletedTask;
+            p.LastCoin = Random.Shared.Next(0, 2) == 0 ? "cara" : "coroa";
+        }
+        return Broadcast(code);
+    }
+
+    public Task RollDiceAsync(string code, Guid userId)
+    {
+        lock (_lock)
+        {
+            if (!_matches.TryGetValue(code, out var m)) return Task.CompletedTask;
+            var p = m.GetByUser(userId);
+            if (p == null) return Task.CompletedTask;
+            p.LastDice = Random.Shared.Next(1, 7).ToString();
         }
         return Broadcast(code);
     }

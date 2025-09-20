@@ -95,8 +95,7 @@ app.MapPost("/battle/{code}/reveal", async (string code, HttpRequest req, IMatch
     var returnTo = form["returnTo"].ToString();
     if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(revealStr, out var reveal))
         await runtime.RevealAsync(code, cardId, reveal);
-    if (!string.IsNullOrWhiteSpace(returnTo))
-        return Results.Redirect(returnTo);
+    if (!string.IsNullOrWhiteSpace(returnTo)) return Results.Redirect(returnTo);
     return Results.NoContent();
 });
 
@@ -105,8 +104,10 @@ app.MapPost("/battle/{code}/facedown", async (string code, HttpRequest req, IMat
     var form = await req.ReadFormAsync();
     var cardId = form["cardId"].ToString();
     var fdStr = form["faceDown"].ToString();
+    var returnTo = form["returnTo"].ToString();
     if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(fdStr, out var fd))
         await runtime.SetFaceDownAsync(code, cardId, fd);
+    if (!string.IsNullOrWhiteSpace(returnTo)) return Results.Redirect(returnTo);
     return Results.NoContent();
 });
 
@@ -115,8 +116,10 @@ app.MapPost("/battle/{code}/defense", async (string code, HttpRequest req, IMatc
     var form = await req.ReadFormAsync();
     var cardId = form["cardId"].ToString();
     var defStr = form["defense"].ToString();
+    var returnTo = form["returnTo"].ToString();
     if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(defStr, out var def))
         await runtime.SetDefenseAsync(code, cardId, def);
+    if (!string.IsNullOrWhiteSpace(returnTo)) return Results.Redirect(returnTo);
     return Results.NoContent();
 });
 
@@ -130,8 +133,8 @@ app.MapPost("/battle/{code}/move", async (string code, HttpRequest req, IMatchRu
     var deckPosStr = form["deckPos"].ToString();
     var faceDownStr = form["faceDown"].ToString();
     var defenseStr = form["defense"].ToString();
-    var placeFlow = form["placeFlow"].ToString();
     var returnTo = form["returnTo"].ToString();
+    var placeFlow = form["placeFlow"].ToString();
 
     if (string.IsNullOrWhiteSpace(cardId)) return Results.NoContent();
     if (!Guid.TryParse(targetUserStr, out var targetUserId)) return Results.NoContent();
@@ -140,16 +143,16 @@ app.MapPost("/battle/{code}/move", async (string code, HttpRequest req, IMatchRu
     var idx = int.TryParse(indexStr, out var i) ? i : 0;
     var dpos = Enum.TryParse<DeckPosition>(deckPosStr, true, out var dp) ? dp : DeckPosition.Top;
 
+    await runtime.MoveCardAsync(code, cardId, targetUserId, zone, idx, dpos);
+
     if (bool.TryParse(faceDownStr, out var fd))
         await runtime.SetFaceDownAsync(code, cardId, fd);
     if (bool.TryParse(defenseStr, out var def))
         await runtime.SetDefenseAsync(code, cardId, def);
 
-    await runtime.MoveCardAsync(code, cardId, targetUserId, zone, idx, dpos);
-
     if (!string.IsNullOrWhiteSpace(returnTo))
         return Results.Redirect(returnTo);
-    if (placeFlow == "1")
+    if (!string.IsNullOrWhiteSpace(placeFlow))
         return Results.Redirect($"/battle/{code}");
 
     return Results.NoContent();
@@ -171,6 +174,24 @@ app.MapPost("/battle/{code}/lp", async (string code, HttpRequest req, IMatchRunt
     var deltaStr = form["delta"].ToString();
     if (Guid.TryParse(targetUserStr, out var uid) && int.TryParse(deltaStr, out var delta))
         await runtime.AdjustLifeAsync(code, uid, delta);
+    return Results.NoContent();
+});
+
+app.MapPost("/battle/{code}/coin", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+{
+    var form = await req.ReadFormAsync();
+    var userIdStr = form["userId"].ToString();
+    if (Guid.TryParse(userIdStr, out var uid))
+        await runtime.TossCoinAsync(code, uid);
+    return Results.NoContent();
+});
+
+app.MapPost("/battle/{code}/dice", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+{
+    var form = await req.ReadFormAsync();
+    var userIdStr = form["userId"].ToString();
+    if (Guid.TryParse(userIdStr, out var uid))
+        await runtime.RollDiceAsync(code, uid);
     return Results.NoContent();
 });
 
