@@ -504,52 +504,68 @@
                     <button type="submit" name="place" value="@selected.Id" class="btn">Confirm & choose slot</button>
                 </form>
 
-                <form method="post" action="@($"/battle/{Code}/move")" class="opt-full">
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")" class="opt-full">
                     <input type="hidden" name="cardId" value="@selected.Id" />
                     <input type="hidden" name="targetUserId" value="@selfUserId" />
                     <input type="hidden" name="zone" value="Graveyard" />
                     <input type="hidden" name="index" value="0" />
                     <input type="hidden" name="deckPos" value="Top" />
-                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                     <button type="submit" class="btn">Send to Graveyard</button>
                 </form>
 
-                <form method="post" action="@($"/battle/{Code}/move")">
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
                     <input type="hidden" name="cardId" value="@selected.Id" />
                     <input type="hidden" name="targetUserId" value="@selfUserId" />
                     <input type="hidden" name="zone" value="Hand" />
                     <input type="hidden" name="index" value="0" />
                     <input type="hidden" name="deckPos" value="Top" />
-                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                     <button type="submit" class="btn">Move to my hand</button>
                 </form>
 
                 @if (oppUserId != Guid.Empty)
                 {
-                    <form method="post" action="@($"/battle/{Code}/move")">
+                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
                         <input type="hidden" name="cardId" value="@selected.Id" />
                         <input type="hidden" name="targetUserId" value="@oppUserId" />
                         <input type="hidden" name="zone" value="Hand" />
                         <input type="hidden" name="index" value="0" />
                         <input type="hidden" name="deckPos" value="Top" />
-                        <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                         <button type="submit" class="btn">Move to opponent hand</button>
                     </form>
                 }
 
-                <form method="post" action="@($"/battle/{Code}/reveal")">
+                <form method="post" target="silent" action="@($"/battle/{Code}/reveal")">
                     <input type="hidden" name="cardId" value="@selected.Id" />
                     <input type="hidden" name="reveal" value="true" />
-                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                     <button type="submit" class="btn">Reveal to opponent</button>
                 </form>
 
-                <form method="post" action="@($"/battle/{Code}/reveal")">
+                <form method="post" target="silent" action="@($"/battle/{Code}/reveal")">
                     <input type="hidden" name="cardId" value="@selected.Id" />
                     <input type="hidden" name="reveal" value="false" />
-                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                     <button type="submit" class="btn">Hide from opponent</button>
                 </form>
+
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")" class="opt-full">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                    <input type="hidden" name="zone" value="Deck" />
+                    <input type="hidden" name="index" value="0" />
+                    <input type="hidden" name="deckPos" value="Top" />
+                    <button type="submit" class="btn">Place on top of my deck</button>
+                </form>
+
+                @if (oppUserId != Guid.Empty)
+                {
+                    <form method="post" target="silent" action="@($"/battle/{Code}/move")" class="opt-full">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="targetUserId" value="@oppUserId" />
+                        <input type="hidden" name="zone" value="Deck" />
+                        <input type="hidden" name="index" value="0" />
+                        <input type="hidden" name="deckPos" value="Top" />
+                        <button type="submit" class="btn">Place on top of opponent deck</button>
+                    </form>
+                }
 
                 <form method="get" action="@($"/battle/{Code}")" class="opt-full">
                     <button type="submit" class="btn">Close</button>
