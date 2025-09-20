@@ -274,3 +274,13 @@ body {
 .center-results {
     font-weight: 700;
 }
+
+.card-img.defense {
+    transform: rotate(90deg);
+    transform-origin: center;
+}
+
+.slot-img.defense {
+    transform: rotate(90deg);
+    transform-origin: center;
+}

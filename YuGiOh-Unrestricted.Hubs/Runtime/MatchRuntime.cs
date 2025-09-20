@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using YuGiOh_Unrestricted.Core.Models;
 using YuGiOh_Unrestricted.Infrastructure.Data;
 
@@ -154,8 +150,6 @@ public class MatchRuntime : IMatchRuntime
 
             var c = me.Deck[0];
             me.Deck.RemoveAt(0);
-            c.IsFaceDown = false;
-            c.IsRevealed = false;
             me.Hand.Add(c);
         }
 
@@ -183,17 +177,6 @@ public class MatchRuntime : IMatchRuntime
             if (card == null) return Task.CompletedTask;
 
             AddTo(owner, zone, card, targetIndex, deckPos);
-
-            if (zone == ZoneType.Graveyard)
-            {
-                card.IsFaceDown = false;
-                card.IsRevealed = true;
-            }
-            else if (zone == ZoneType.Hand)
-            {
-                card.IsFaceDown = false;
-                card.IsRevealed = false;
-            }
         }
         return Broadcast(code);
     }
@@ -225,40 +208,44 @@ public class MatchRuntime : IMatchRuntime
 
     public async Task TossCoinSharedAsync(string code)
     {
-        RuntimeMatch? m;
         lock (_lock)
         {
-            if (!_matches.TryGetValue(code, out m)) return;
+            if (!_matches.TryGetValue(code, out var m)) return;
             m.IsCoinRolling = true;
-            m.SharedCoin = "???";
+            m.SharedCoin = "";
         }
         await Broadcast(code);
         await Task.Delay(500);
+        var v = new Random().Next(2) == 0 ? "Heads" : "Tails";
         lock (_lock)
         {
-            if (m == null) return;
-            m.IsCoinRolling = false;
-            m.SharedCoin = Random.Shared.Next(0, 2) == 0 ? "Heads" : "Tails";
+            if (_matches.TryGetValue(code, out var m))
+            {
+                m.IsCoinRolling = false;
+                m.SharedCoin = v;
+            }
         }
         await Broadcast(code);
     }
 
     public async Task RollDiceSharedAsync(string code)
     {
-        RuntimeMatch? m;
         lock (_lock)
         {
-            if (!_matches.TryGetValue(code, out m)) return;
+            if (!_matches.TryGetValue(code, out var m)) return;
             m.IsDiceRolling = true;
-            m.SharedDice = "???";
+            m.SharedDice = "";
         }
         await Broadcast(code);
         await Task.Delay(500);
+        var v = new Random().Next(1, 7).ToString();
         lock (_lock)
         {
-            if (m == null) return;
-            m.IsDiceRolling = false;
-            m.SharedDice = Random.Shared.Next(1, 7).ToString();
+            if (_matches.TryGetValue(code, out var m))
+            {
+                m.IsDiceRolling = false;
+                m.SharedDice = v;
+            }
         }
         await Broadcast(code);
     }

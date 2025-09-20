@@ -79,6 +79,7 @@
 {
     var self = match.GetByConn(connectionId ?? "");
     var opp = match.GetOpponent(connectionId ?? "");
+    var ownerForPlace = string.IsNullOrWhiteSpace(placeCardId) ? Guid.Empty : GetOwnerUserId(placeCardId);
 
     <div class="board">
         @if (opp is not null)
@@ -93,7 +94,7 @@
                     <div class="hand-cards">
                         @foreach (var hc in opp.Hand)
                         {
-                            var canOpen = !hc.IsFaceDown && hc.IsRevealed && !string.IsNullOrWhiteSpace(hc.ImageUrl);
+                            var canOpen = hc.IsRevealed && !string.IsNullOrWhiteSpace(hc.ImageUrl);
                             if (canOpen)
                             {
                                 <form method="get" action="@($"/battle/{Code}")">
@@ -126,10 +127,12 @@
                             {
                                 <form method="post" action="@($"/battle/{Code}/move")">
                                     <input type="hidden" name="cardId" value="@placeCardId" />
+                                    <input type="hidden" name="ownerUserId" value="@ownerForPlace" />
                                     <input type="hidden" name="targetUserId" value="@oppUserId" />
                                     <input type="hidden" name="zone" value="FieldSpellTrap" />
                                     <input type="hidden" name="index" value="@i" />
                                     <input type="hidden" name="deckPos" value="Top" />
+                                    <!-- ADICIONADOS -->
                                     <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                     <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                     <input type="hidden" name="placeFlow" value="1" />
@@ -171,10 +174,12 @@
                             {
                                 <form method="post" action="@($"/battle/{Code}/move")">
                                     <input type="hidden" name="cardId" value="@placeCardId" />
+                                    <input type="hidden" name="ownerUserId" value="@ownerForPlace" />
                                     <input type="hidden" name="targetUserId" value="@oppUserId" />
                                     <input type="hidden" name="zone" value="FieldMonster" />
                                     <input type="hidden" name="index" value="@i" />
                                     <input type="hidden" name="deckPos" value="Top" />
+                                    <!-- ADICIONADOS -->
                                     <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                     <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                     <input type="hidden" name="placeFlow" value="1" />
@@ -205,10 +210,12 @@
                         {
                             <form method="post" action="@($"/battle/{Code}/move")">
                                 <input type="hidden" name="cardId" value="@placeCardId" />
+                                <input type="hidden" name="ownerUserId" value="@ownerForPlace" />
                                 <input type="hidden" name="targetUserId" value="@oppUserId" />
                                 <input type="hidden" name="zone" value="FieldMagic" />
                                 <input type="hidden" name="index" value="0" />
                                 <input type="hidden" name="deckPos" value="Top" />
+                                <!-- ADICIONADOS -->
                                 <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                 <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                 <input type="hidden" name="placeFlow" value="1" />
@@ -276,10 +283,12 @@
                         {
                             <form method="post" action="@($"/battle/{Code}/move")">
                                 <input type="hidden" name="cardId" value="@placeCardId" />
+                                <input type="hidden" name="ownerUserId" value="@ownerForPlace" />
                                 <input type="hidden" name="targetUserId" value="@selfUserId" />
                                 <input type="hidden" name="zone" value="FieldMagic" />
                                 <input type="hidden" name="index" value="0" />
                                 <input type="hidden" name="deckPos" value="Top" />
+                                <!-- ADICIONADOS -->
                                 <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                 <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                 <input type="hidden" name="placeFlow" value="1" />
@@ -309,10 +318,12 @@
                             {
                                 <form method="post" action="@($"/battle/{Code}/move")">
                                     <input type="hidden" name="cardId" value="@placeCardId" />
+                                    <input type="hidden" name="ownerUserId" value="@ownerForPlace" />
                                     <input type="hidden" name="targetUserId" value="@selfUserId" />
                                     <input type="hidden" name="zone" value="FieldMonster" />
                                     <input type="hidden" name="index" value="@i" />
                                     <input type="hidden" name="deckPos" value="Top" />
+                                    <!-- ADICIONADOS -->
                                     <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                     <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                     <input type="hidden" name="placeFlow" value="1" />
@@ -346,10 +357,12 @@
                             {
                                 <form method="post" action="@($"/battle/{Code}/move")">
                                     <input type="hidden" name="cardId" value="@placeCardId" />
+                                    <input type="hidden" name="ownerUserId" value="@ownerForPlace" />
                                     <input type="hidden" name="targetUserId" value="@selfUserId" />
                                     <input type="hidden" name="zone" value="FieldSpellTrap" />
                                     <input type="hidden" name="index" value="@i" />
                                     <input type="hidden" name="deckPos" value="Top" />
+                                    <!-- ADICIONADOS -->
                                     <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                     <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                     <input type="hidden" name="placeFlow" value="1" />
@@ -504,68 +517,57 @@
                     <button type="submit" name="place" value="@selected.Id" class="btn">Confirm & choose slot</button>
                 </form>
 
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")" class="opt-full">
+                <form method="post" action="@($"/battle/{Code}/move")" class="opt-full">
                     <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
                     <input type="hidden" name="targetUserId" value="@selfUserId" />
                     <input type="hidden" name="zone" value="Graveyard" />
                     <input type="hidden" name="index" value="0" />
                     <input type="hidden" name="deckPos" value="Top" />
+                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                     <button type="submit" class="btn">Send to Graveyard</button>
                 </form>
 
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                <form method="post" action="@($"/battle/{Code}/move")">
                     <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
                     <input type="hidden" name="targetUserId" value="@selfUserId" />
                     <input type="hidden" name="zone" value="Hand" />
                     <input type="hidden" name="index" value="0" />
                     <input type="hidden" name="deckPos" value="Top" />
+                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                     <button type="submit" class="btn">Move to my hand</button>
                 </form>
 
                 @if (oppUserId != Guid.Empty)
                 {
-                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <form method="post" action="@($"/battle/{Code}/move")">
                         <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
                         <input type="hidden" name="targetUserId" value="@oppUserId" />
                         <input type="hidden" name="zone" value="Hand" />
                         <input type="hidden" name="index" value="0" />
                         <input type="hidden" name="deckPos" value="Top" />
+                        <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                         <button type="submit" class="btn">Move to opponent hand</button>
                     </form>
                 }
 
-                <form method="post" target="silent" action="@($"/battle/{Code}/reveal")">
+                <form method="post" action="@($"/battle/{Code}/reveal")">
                     <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
                     <input type="hidden" name="reveal" value="true" />
+                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                     <button type="submit" class="btn">Reveal to opponent</button>
                 </form>
 
-                <form method="post" target="silent" action="@($"/battle/{Code}/reveal")">
+                <form method="post" action="@($"/battle/{Code}/reveal")">
                     <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
                     <input type="hidden" name="reveal" value="false" />
+                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                     <button type="submit" class="btn">Hide from opponent</button>
                 </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")" class="opt-full">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@selfUserId" />
-                    <input type="hidden" name="zone" value="Deck" />
-                    <input type="hidden" name="index" value="0" />
-                    <input type="hidden" name="deckPos" value="Top" />
-                    <button type="submit" class="btn">Place on top of my deck</button>
-                </form>
-
-                @if (oppUserId != Guid.Empty)
-                {
-                    <form method="post" target="silent" action="@($"/battle/{Code}/move")" class="opt-full">
-                        <input type="hidden" name="cardId" value="@selected.Id" />
-                        <input type="hidden" name="targetUserId" value="@oppUserId" />
-                        <input type="hidden" name="zone" value="Deck" />
-                        <input type="hidden" name="index" value="0" />
-                        <input type="hidden" name="deckPos" value="Top" />
-                        <button type="submit" class="btn">Place on top of opponent deck</button>
-                    </form>
-                }
 
                 <form method="get" action="@($"/battle/{Code}")" class="opt-full">
                     <button type="submit" class="btn">Close</button>
@@ -727,5 +729,20 @@
             if (p.FieldMagic?.Id == id) return p.FieldMagic;
         }
         return null;
+    }
+
+    private Guid GetOwnerUserId(string cid)
+    {
+        if (match == null) return Guid.Empty;
+        foreach (var p in match.Players)
+        {
+            if (p.Hand.Any(x => x.Id == cid)) return p.UserId;
+            if (p.Deck.Any(x => x.Id == cid)) return p.UserId;
+            if (p.Graveyard.Any(x => x.Id == cid)) return p.UserId;
+            if (p.FieldMagic?.Id == cid) return p.UserId;
+            if (p.FieldMonsters.Any(x => x?.Id == cid)) return p.UserId;
+            if (p.FieldSpellTraps.Any(x => x?.Id == cid)) return p.UserId;
+        }
+        return Guid.Empty;
     }
 }

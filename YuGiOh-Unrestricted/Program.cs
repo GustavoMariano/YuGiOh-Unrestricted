@@ -92,10 +92,8 @@ app.MapPost("/battle/{code}/reveal", async (string code, HttpRequest req, IMatch
     var form = await req.ReadFormAsync();
     var cardId = form["cardId"].ToString();
     var revealStr = form["reveal"].ToString();
-    var returnTo = form["returnTo"].ToString();
     if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(revealStr, out var reveal))
         await runtime.RevealAsync(code, cardId, reveal);
-    if (!string.IsNullOrWhiteSpace(returnTo)) return Results.Redirect(returnTo);
     return Results.NoContent();
 });
 
@@ -104,10 +102,8 @@ app.MapPost("/battle/{code}/facedown", async (string code, HttpRequest req, IMat
     var form = await req.ReadFormAsync();
     var cardId = form["cardId"].ToString();
     var fdStr = form["faceDown"].ToString();
-    var returnTo = form["returnTo"].ToString();
     if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(fdStr, out var fd))
         await runtime.SetFaceDownAsync(code, cardId, fd);
-    if (!string.IsNullOrWhiteSpace(returnTo)) return Results.Redirect(returnTo);
     return Results.NoContent();
 });
 
@@ -116,10 +112,8 @@ app.MapPost("/battle/{code}/defense", async (string code, HttpRequest req, IMatc
     var form = await req.ReadFormAsync();
     var cardId = form["cardId"].ToString();
     var defStr = form["defense"].ToString();
-    var returnTo = form["returnTo"].ToString();
     if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(defStr, out var def))
         await runtime.SetDefenseAsync(code, cardId, def);
-    if (!string.IsNullOrWhiteSpace(returnTo)) return Results.Redirect(returnTo);
     return Results.NoContent();
 });
 
@@ -131,10 +125,10 @@ app.MapPost("/battle/{code}/move", async (string code, HttpRequest req, IMatchRu
     var zoneStr = form["zone"].ToString();
     var indexStr = form["index"].ToString();
     var deckPosStr = form["deckPos"].ToString();
-    var faceDownStr = form["faceDown"].ToString();
-    var defenseStr = form["defense"].ToString();
-    var returnTo = form["returnTo"].ToString();
-    var placeFlow = form["placeFlow"].ToString();
+
+    // Opções escolhidas no modal
+    var fdStr = form["faceDown"].ToString();
+    var defStr = form["defense"].ToString();
 
     if (string.IsNullOrWhiteSpace(cardId)) return Results.NoContent();
     if (!Guid.TryParse(targetUserStr, out var targetUserId)) return Results.NoContent();
@@ -143,17 +137,43 @@ app.MapPost("/battle/{code}/move", async (string code, HttpRequest req, IMatchRu
     var idx = int.TryParse(indexStr, out var i) ? i : 0;
     var dpos = Enum.TryParse<DeckPosition>(deckPosStr, true, out var dp) ? dp : DeckPosition.Top;
 
+    var fd = bool.TryParse(fdStr, out var fdTmp) ? fdTmp : false;
+    var def = bool.TryParse(defStr, out var defTmp) ? defTmp : false;
+
+    // Move primeiro
     await runtime.MoveCardAsync(code, cardId, targetUserId, zone, idx, dpos);
 
-    if (bool.TryParse(faceDownStr, out var fd))
-        await runtime.SetFaceDownAsync(code, cardId, fd);
-    if (bool.TryParse(defenseStr, out var def))
-        await runtime.SetDefenseAsync(code, cardId, def);
+    // Ajusta estado (face/posição)
+    await runtime.SetFaceDownAsync(code, cardId, fd);
+    await runtime.SetDefenseAsync(code, cardId, def);
 
-    if (!string.IsNullOrWhiteSpace(returnTo))
-        return Results.Redirect(returnTo);
-    if (!string.IsNullOrWhiteSpace(placeFlow))
-        return Results.Redirect($"/battle/{code}");
+    // Regras de visibilidade conforme destino
+    switch (zone)
+    {
+        case ZoneType.FieldMonster:
+        case ZoneType.FieldSpellTrap:
+        case ZoneType.FieldMagic:
+            // No campo: se não estiver face down, deve ficar visível para o oponente
+            await runtime.RevealAsync(code, cardId, !fd);
+            break;
+
+        case ZoneType.Graveyard:
+            // No GY: sempre face up e visível para ambos
+            await runtime.SetFaceDownAsync(code, cardId, false);
+            await runtime.RevealAsync(code, cardId, true);
+            break;
+
+        case ZoneType.Hand:
+            // Na mão: por padrão NUNCA revelada (só via ação explícita)
+            await runtime.RevealAsync(code, cardId, false);
+            break;
+
+        case ZoneType.Deck:
+            // No deck: por padrão consideramos oculto/virado para baixo e não revelado
+            await runtime.SetFaceDownAsync(code, cardId, true);
+            await runtime.RevealAsync(code, cardId, false);
+            break;
+    }
 
     return Results.NoContent();
 });
