@@ -141,8 +141,6 @@ body {
         border-style: dashed;
     }
 
-
-
 .cards-row {
     display: flex;
     gap: 6px;
@@ -168,9 +166,10 @@ body {
     width: 100%;
 }
 
-.modal::backdrop {
+    .modal::backdrop {
         background: rgba(0,0,0,.5);
     }
+
 
 .modal-overlay {
     position: fixed;

@@ -76,9 +76,10 @@
                 <div class="hand">
                     <h5>Opponent Hand</h5>
                     <div class="hand-cards cards-row">
-                        @for (int i = 0; i < opp.Hand.Count; i++)
+                        @foreach (var hc in opp.Hand)
                         {
-                            <img class="card-img" src="@cardBack" alt="Card back" />
+                            var showFront = hc.IsRevealed && !string.IsNullOrWhiteSpace(hc.ImageUrl);
+                            <img class="card-img" src="@(showFront? hc.ImageUrl: cardBack)" alt="@(showFront? hc.Name: "Card back")" />
                         }
                     </div>
                 </div>
@@ -182,7 +183,7 @@
 
             <hr />
 
-            <div style="display:grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap:12px;">
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(240px, 1fr)); gap:12px;">
                 <form method="post" target="silent" action="@($"/battle/{Code}/reveal")">
                     <input type="hidden" name="cardId" value="@selected.Id" />
                     <input type="hidden" name="reveal" value="true" />
@@ -221,66 +222,126 @@
             </div>
 
             <h5 style="margin-top:16px;">Move to your zone</h5>
-            <form method="post" target="silent" action="@($"/battle/{Code}/move")" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap;">
-                <input type="hidden" name="cardId" value="@selected.Id" />
-                <input type="hidden" name="targetUserId" value="@selfUserId" />
-                <label>
-                    Zone
-                    <select name="zone">
-                        <option>Hand</option>
-                        <option>Deck</option>
-                        <option>Graveyard</option>
-                        <option>FieldMonster</option>
-                        <option>FieldSpellTrap</option>
-                        <option>FieldMagic</option>
-                    </select>
-                </label>
-                <label>
-                    Index
-                    <input type="number" name="index" value="0" min="0" max="4" />
-                </label>
-                <label>
-                    DeckPos
-                    <select name="deckPos">
-                        <option>Top</option>
-                        <option>Middle</option>
-                        <option>Bottom</option>
-                    </select>
-                </label>
-                <button type="submit">Move</button>
-            </form>
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap:10px;">
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                    <input type="hidden" name="zone" value="FieldMonster" />
+                    <label>Index <input type="number" name="index" value="0" min="0" max="4" /></label>
+                    <button type="submit">Place as monster</button>
+                </form>
+
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                    <input type="hidden" name="zone" value="FieldSpellTrap" />
+                    <label>Index <input type="number" name="index" value="0" min="0" max="4" /></label>
+                    <button type="submit">Place as spell/trap</button>
+                </form>
+
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                    <input type="hidden" name="zone" value="FieldMagic" />
+                    <button type="submit">Place as field spell</button>
+                </form>
+
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                    <input type="hidden" name="zone" value="Graveyard" />
+                    <button type="submit">Send to graveyard</button>
+                </form>
+
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                    <input type="hidden" name="zone" value="Hand" />
+                    <button type="submit">Return to hand</button>
+                </form>
+
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                    <input type="hidden" name="zone" value="Deck" />
+                    <input type="hidden" name="deckPos" value="Top" />
+                    <button type="submit">Top of deck</button>
+                </form>
+
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                    <input type="hidden" name="zone" value="Deck" />
+                    <input type="hidden" name="deckPos" value="Middle" />
+                    <button type="submit">Middle of deck</button>
+                </form>
+
+                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                    <input type="hidden" name="zone" value="Deck" />
+                    <input type="hidden" name="deckPos" value="Bottom" />
+                    <button type="submit">Bottom of deck</button>
+                </form>
+            </div>
 
             @if (opponentUserId != Guid.Empty)
             {
-                <h5 style="margin-top:12px;">Move to opponent zone</h5>
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap;">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@opponentUserId" />
-                    <label>
-                        Zone
-                        <select name="zone">
-                            <option>Hand</option>
-                            <option>Deck</option>
-                            <option>Graveyard</option>
-                            <option>FieldMonster</option>
-                            <option>FieldSpellTrap</option>
-                            <option>FieldMagic</option>
-                        </select>
-                    </label>
-                    <label>
-                        Index
-                        <input type="number" name="index" value="0" min="0" max="4" />
-                    </label>
-                    <label>
-                        DeckPos
-                        <select name="deckPos">
-                            <option>Top</option>
-                            <option>Middle</option>
-                            <option>Bottom</option>
-                        </select>
-                    </label>
-                    <button type="submit">Move</button>
-                </form>
+                <h5 style="margin-top:16px;">Move to opponent zone</h5>
+                <div style="display:grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap:10px;">
+                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
+                        <input type="hidden" name="zone" value="FieldMonster" />
+                        <label>Index <input type="number" name="index" value="0" min="0" max="4" /></label>
+                        <button type="submit">Opponent monster zone</button>
+                    </form>
+
+                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
+                        <input type="hidden" name="zone" value="FieldSpellTrap" />
+                        <label>Index <input type="number" name="index" value="0" min="0" max="4" /></label>
+                        <button type="submit">Opponent spell/trap zone</button>
+                    </form>
+
+                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
+                        <input type="hidden" name="zone" value="FieldMagic" />
+                        <button type="submit">Opponent field spell</button>
+                    </form>
+
+                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
+                        <input type="hidden" name="zone" value="Hand" />
+                        <button type="submit">Give to opponent hand</button>
+                    </form>
+
+                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
+                        <input type="hidden" name="zone" value="Graveyard" />
+                        <button type="submit">Send to opponent GY</button>
+                    </form>
+
+                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
+                        <input type="hidden" name="zone" value="Deck" />
+                        <input type="hidden" name="deckPos" value="Top" />
+                        <button type="submit">Opponent deck top</button>
+                    </form>
+
+                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
+                        <input type="hidden" name="zone" value="Deck" />
+                        <input type="hidden" name="deckPos" value="Bottom" />
+                        <button type="submit">Opponent deck bottom</button>
+                    </form>
+                </div>
             }
 
             <div style="margin-top:16px;">
@@ -384,8 +445,12 @@
             var g = p.Graveyard.FirstOrDefault(x => x.Id == detailsId);
             if (g != null) { selected = g; return; }
 
-            foreach (var c in p.FieldMonsters) if (c?.Id == detailsId) { selected = c; return; }
-            foreach (var c in p.FieldSpellTraps) if (c?.Id == detailsId) { selected = c; return; }
+            for (int i = 0; i < p.FieldMonsters.Count; i++)
+                if (p.FieldMonsters[i]?.Id == detailsId) { selected = p.FieldMonsters[i]; return; }
+
+            for (int i = 0; i < p.FieldSpellTraps.Count; i++)
+                if (p.FieldSpellTraps[i]?.Id == detailsId) { selected = p.FieldSpellTraps[i]; return; }
+
             if (p.FieldMagic?.Id == detailsId) { selected = p.FieldMagic; return; }
         }
     }
