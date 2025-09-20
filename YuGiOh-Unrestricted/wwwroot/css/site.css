@@ -71,6 +71,7 @@ body {
     background: #4c2b27;
     color: #fff;
     flex-direction: column;
+    gap: 6px;
 }
 
 .graveyard {
@@ -145,18 +146,46 @@ body {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+    align-items: flex-start;
 }
 
 .card-img {
     width: 80px;
     height: auto;
     border-radius: 4px;
+    object-fit: contain;
 }
 
 .card-btn {
     padding: 0;
     border: none;
     background: transparent;
+    cursor: pointer;
+}
+
+.slot-img {
+    width: 80px;
+    height: auto;
+    border-radius: 4px;
+    object-fit: contain;
+}
+
+    .slot-img.defense,
+    .card-img.defense {
+        transform: rotate(90deg);
+        transform-origin: center center;
+    }
+
+.slot-empty {
+    width: 80px;
+    height: 116px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    opacity: .6;
+    border: 1px dashed #aaa;
+    border-radius: 4px;
 }
 
 .modal {
@@ -170,13 +199,19 @@ body {
         background: rgba(0,0,0,.5);
     }
 
+.modal-card {
+    width: 180px;
+    height: auto;
+    border-radius: 6px;
+}
 
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.5);
+.placing-bar {
+    background: #2f2f2f;
+    border: 1px solid #444;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
     display: flex;
+    gap: 12px;
     align-items: center;
-    justify-content: center;
-    z-index: 1000;
 }

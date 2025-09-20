@@ -13,6 +13,17 @@
 
 <iframe name="silent" style="display:none;"></iframe>
 
+@if (isPlacing && match is not null && selectedForPlace is not null)
+{
+    <div class="placing-bar">
+        <div>Placing: <strong>@selectedForPlace.Name</strong></div>
+        <div>Face: @(placeFaceDown ? "Down" : "Up") • Position: @(placeDefense ? "Defense" : "Attack")</div>
+        <form method="get" action="@($"/battle/{Code}")">
+            <button type="submit" class="btn">Cancel</button>
+        </form>
+    </div>
+}
+
 @if (match is null)
 {
     <div class="join-container">
@@ -37,23 +48,23 @@
     }
     else
     {
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <div class="deck-choices">
             @foreach (var d in deckOptions)
             {
                 <form method="post" target="silent" action="@($"/battle/{Code}/select-deck")">
                     <input type="hidden" name="deckId" value="@d.Id" />
                     <input type="hidden" name="userId" value="@App.UserId" />
-                    <button type="submit" disabled="@(d.Total < 1 || (self?.IsReady ?? false))">@d.Name (@d.Total)</button>
+                    <button type="submit" class="btn @((self?.IsReady ?? false) || d.Total < 1 ? "disabled" : null)">@d.Name (@d.Total)</button>
                 </form>
             }
         </div>
         <div style="margin-top:8px;">
             <form method="post" target="silent" action="@($"/battle/{Code}/ready")">
                 <input type="hidden" name="userId" value="@App.UserId" />
-                <button type="submit" disabled="@(self == null || ((self?.Deck.Count ?? 0) < 1) || self.IsReady)">@((self?.IsReady ?? false) ? "Waiting..." : "Ready")</button>
+                <button type="submit" class="btn" disabled="@(self == null || ((self?.Deck.Count ?? 0) < 1) || self.IsReady)">@((self?.IsReady ?? false) ? "Waiting..." : "Ready")</button>
             </form>
         </div>
-        <div style="margin-top:8px; font-size:12px; opacity:.75;">
+        <div class="ready-hint">
             <span>You: @(((self?.IsReady ?? false) ? "Ready" : "Not ready"))</span>
             @if (match.Players.Count == 2)
             {
@@ -73,64 +84,253 @@
         @if (opp is not null)
         {
             <div class="player player-top">
+                <div class="player-info opp">
+                    <strong>@opp.Name</strong> — LP: @opp.LifePoints
+                </div>
+
                 <div class="hand">
                     <h5>Opponent Hand</h5>
-                    <div class="hand-cards cards-row">
+                    <div class="hand-cards">
                         @foreach (var hc in opp.Hand)
                         {
                             var showFront = hc.IsRevealed && !string.IsNullOrWhiteSpace(hc.ImageUrl);
-                            <img class="card-img" src="@(showFront? hc.ImageUrl: cardBack)" alt="@(showFront? hc.Name: "Card back")" />
+                            <form method="get" action="@($"/battle/{Code}")">
+                                <input type="hidden" name="details" value="@hc.Id" />
+                                <button type="submit" class="card-btn">
+                                    <img class="card-img @(hc.IsDefense ? "defense" : null)" src="@(showFront? hc.ImageUrl: cardBack)" alt="@(showFront? hc.Name: "Card back")" />
+                                </button>
+                            </form>
                         }
                     </div>
                 </div>
 
                 <div class="row">
-                    <div class="deck">Deck (@opp.Deck.Count)</div>
+                    <div class="deck">
+                        <form method="get" action="@($"/battle/{Code}")">
+                            <input type="hidden" name="oppdeck" value="1" />
+                            <button type="submit" class="btn">Deck (@opp.Deck.Count)</button>
+                        </form>
+                    </div>
                     @for (int i = 0; i < 5; i++)
                     {
                         var c = opp.FieldSpellTraps.ElementAtOrDefault(i);
-                        <div class="slot spelltrap">@((c == null) ? "(empty)" : (c.IsFaceDown ? "(face down)" : c.Name))</div>
+                        <div class="slot spelltrap">
+                            @if (isPlacing)
+                            {
+                                <form method="post" action="@($"/battle/{Code}/move")">
+                                    <input type="hidden" name="cardId" value="@placeCardId" />
+                                    <input type="hidden" name="targetUserId" value="@oppUserId" />
+                                    <input type="hidden" name="zone" value="FieldSpellTrap" />
+                                    <input type="hidden" name="index" value="@i" />
+                                    <input type="hidden" name="deckPos" value="Top" />
+                                    <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
+                                    <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
+                                    <input type="hidden" name="placeFlow" value="1" />
+                                    <button type="submit" class="btn">Place @(i + 1)</button>
+                                </form>
+                            }
+                            @if (c is not null)
+                            {
+                                <form method="get" action="@($"/battle/{Code}")">
+                                    <input type="hidden" name="details" value="@c.Id" />
+                                    <button type="submit" class="card-btn">
+                                        <img class="slot-img @(c.IsDefense ? "defense" : null)" src="@(c.IsFaceDown || string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
+                                    </button>
+                                </form>
+                            }
+                        </div>
                     }
                 </div>
                 <div class="row">
-                    <div class="graveyard">GY (@opp.Graveyard.Count)</div>
+                    <div class="graveyard">
+                        <form method="get" action="@($"/battle/{Code}")">
+                            <input type="hidden" name="gy" value="opp" />
+                            <button type="submit" class="btn">GY (@opp.Graveyard.Count)</button>
+                        </form>
+                    </div>
                     @for (int i = 0; i < 5; i++)
                     {
                         var c = opp.FieldMonsters.ElementAtOrDefault(i);
-                        <div class="slot monster">@((c == null) ? "(empty)" : (c.IsFaceDown ? "(face down)" : c.Name))</div>
+                        <div class="slot monster">
+                            @if (isPlacing)
+                            {
+                                <form method="post" action="@($"/battle/{Code}/move")">
+                                    <input type="hidden" name="cardId" value="@placeCardId" />
+                                    <input type="hidden" name="targetUserId" value="@oppUserId" />
+                                    <input type="hidden" name="zone" value="FieldMonster" />
+                                    <input type="hidden" name="index" value="@i" />
+                                    <input type="hidden" name="deckPos" value="Top" />
+                                    <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
+                                    <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
+                                    <input type="hidden" name="placeFlow" value="1" />
+                                    <button type="submit" class="btn">Place @(i + 1)</button>
+                                </form>
+                            }
+                            @if (c is not null)
+                            {
+                                <form method="get" action="@($"/battle/{Code}")">
+                                    <input type="hidden" name="details" value="@c.Id" />
+                                    <button type="submit" class="card-btn">
+                                        <img class="slot-img @(c.IsDefense ? "defense" : null)" src="@(c.IsFaceDown || string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
+                                    </button>
+                                </form>
+                            }
+                        </div>
                     }
-                    <div class="field-magic">@((opp.FieldMagic == null) ? "(empty)" : (opp.FieldMagic.IsFaceDown ? "(face down)" : opp.FieldMagic.Name))</div>
+                    <div class="field-magic">
+                        @if (isPlacing)
+                        {
+                            <form method="post" action="@($"/battle/{Code}/move")">
+                                <input type="hidden" name="cardId" value="@placeCardId" />
+                                <input type="hidden" name="targetUserId" value="@oppUserId" />
+                                <input type="hidden" name="zone" value="FieldMagic" />
+                                <input type="hidden" name="index" value="0" />
+                                <input type="hidden" name="deckPos" value="Top" />
+                                <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
+                                <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
+                                <input type="hidden" name="placeFlow" value="1" />
+                                <button type="submit" class="btn">Place</button>
+                            </form>
+                        }
+                        @if (opp.FieldMagic is null)
+                        {
+                            <div>Field</div>
+                        }
+                        else
+                        {
+                            <form method="get" action="@($"/battle/{Code}")">
+                                <input type="hidden" name="details" value="@opp.FieldMagic.Id" />
+                                <button type="submit" class="card-btn">
+                                    <img class="slot-img @(opp.FieldMagic.IsDefense ? "defense" : null)" src="@(opp.FieldMagic.IsFaceDown || string.IsNullOrWhiteSpace(opp.FieldMagic.ImageUrl) ? cardBack : opp.FieldMagic.ImageUrl)" alt="@opp.FieldMagic.Name" title="@opp.FieldMagic.Name" />
+                                </button>
+                            </form>
+                        }
+                    </div>
                 </div>
-                <div class="player-info opp"><strong>@opp.Name</strong> — LP: @opp.LifePoints</div>
             </div>
         }
 
         @if (self is not null)
         {
             <div class="player player-bottom">
-                <div class="player-info me"><strong>@self.Name</strong> — LP: @self.LifePoints</div>
+                <div class="player-info me">
+                    <strong>@self.Name</strong> —
+                    <form method="post" target="silent" action="@($"/battle/{Code}/lp")" style="display:inline-flex; gap:6px; align-items:center;">
+                        <input type="hidden" name="targetUserId" value="@selfUserId" />
+                        <input type="number" name="delta" step="1" value="0" style="width:90px;" />
+                        <button type="submit" class="btn">Apply</button>
+                    </form>
+                    <span style="margin-left:8px;">LP: @self.LifePoints</span>
+                    <button class="btn" @onclick="TossCoin">Moeda</button>
+                    <button class="btn" @onclick="RollDice">Dado</button>
+                    <span style="margin-left:6px;">@coinText @diceText</span>
+                </div>
 
                 <div class="row">
-                    <div class="field-magic">@((self.FieldMagic == null) ? "(empty)" : self.FieldMagic.Name)</div>
+                    <div class="field-magic">
+                        @if (isPlacing)
+                        {
+                            <form method="post" action="@($"/battle/{Code}/move")">
+                                <input type="hidden" name="cardId" value="@placeCardId" />
+                                <input type="hidden" name="targetUserId" value="@selfUserId" />
+                                <input type="hidden" name="zone" value="FieldMagic" />
+                                <input type="hidden" name="index" value="0" />
+                                <input type="hidden" name="deckPos" value="Top" />
+                                <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
+                                <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
+                                <input type="hidden" name="placeFlow" value="1" />
+                                <button type="submit" class="btn">Place</button>
+                            </form>
+                        }
+                        @if (self.FieldMagic is null)
+                        {
+                            <div>Field</div>
+                        }
+                        else
+                        {
+                            <form method="get" action="@($"/battle/{Code}")">
+                                <input type="hidden" name="details" value="@self.FieldMagic.Id" />
+                                <button type="submit" class="card-btn">
+                                    <img class="slot-img @(self.FieldMagic.IsDefense ? "defense" : null)" src="@(self.FieldMagic.IsFaceDown || string.IsNullOrWhiteSpace(self.FieldMagic.ImageUrl) ? cardBack : self.FieldMagic.ImageUrl)" alt="@self.FieldMagic.Name" title="@self.FieldMagic.Name" />
+                                </button>
+                            </form>
+                        }
+                    </div>
                     @for (int i = 0; i < 5; i++)
                     {
                         var c = self.FieldMonsters.ElementAtOrDefault(i);
-                        <div class="slot monster">@((c == null) ? "(empty)" : c.Name)</div>
+                        <div class="slot monster">
+                            @if (isPlacing)
+                            {
+                                <form method="post" action="@($"/battle/{Code}/move")">
+                                    <input type="hidden" name="cardId" value="@placeCardId" />
+                                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                                    <input type="hidden" name="zone" value="FieldMonster" />
+                                    <input type="hidden" name="index" value="@i" />
+                                    <input type="hidden" name="deckPos" value="Top" />
+                                    <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
+                                    <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
+                                    <input type="hidden" name="placeFlow" value="1" />
+                                    <button type="submit" class="btn">Place @(i + 1)</button>
+                                </form>
+                            }
+                            @if (c is not null)
+                            {
+                                <form method="get" action="@($"/battle/{Code}")">
+                                    <input type="hidden" name="details" value="@c.Id" />
+                                    <button type="submit" class="card-btn">
+                                        <img class="slot-img @(c.IsDefense ? "defense" : null)" src="@(c.IsFaceDown || string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
+                                    </button>
+                                </form>
+                            }
+                        </div>
                     }
-                    <div class="graveyard">GY (@self.Graveyard.Count)</div>
+                    <div class="graveyard">
+                        <form method="get" action="@($"/battle/{Code}")">
+                            <input type="hidden" name="gy" value="self" />
+                            <button type="submit" class="btn">GY (@self.Graveyard.Count)</button>
+                        </form>
+                    </div>
                 </div>
                 <div class="row">
                     @for (int i = 0; i < 5; i++)
                     {
                         var c = self.FieldSpellTraps.ElementAtOrDefault(i);
-                        <div class="slot spelltrap">@((c == null) ? "(empty)" : c.Name)</div>
+                        <div class="slot spelltrap">
+                            @if (isPlacing)
+                            {
+                                <form method="post" action="@($"/battle/{Code}/move")">
+                                    <input type="hidden" name="cardId" value="@placeCardId" />
+                                    <input type="hidden" name="targetUserId" value="@selfUserId" />
+                                    <input type="hidden" name="zone" value="FieldSpellTrap" />
+                                    <input type="hidden" name="index" value="@i" />
+                                    <input type="hidden" name="deckPos" value="Top" />
+                                    <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
+                                    <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
+                                    <input type="hidden" name="placeFlow" value="1" />
+                                    <button type="submit" class="btn">Place @(i + 1)</button>
+                                </form>
+                            }
+                            @if (c is not null)
+                            {
+                                <form method="get" action="@($"/battle/{Code}")">
+                                    <input type="hidden" name="details" value="@c.Id" />
+                                    <button type="submit" class="card-btn">
+                                        <img class="slot-img @(c.IsDefense ? "defense" : null)" src="@(c.IsFaceDown || string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
+                                    </button>
+                                </form>
+                            }
+                        </div>
                     }
                     <div class="deck">
-                        Deck (@self.Deck.Count)
+                        <form method="get" action="@($"/battle/{Code}")">
+                            <input type="hidden" name="deck" value="self" />
+                            <button type="submit" class="btn">Deck (@self.Deck.Count)</button>
+                        </form>
                         <div class="draw-box">
                             <form method="post" target="silent" action="@($"/battle/{Code}/draw")">
                                 <input type="hidden" name="userId" value="@App.UserId" />
-                                <button type="submit">Draw 1</button>
+                                <button type="submit" class="btn">Draw 1</button>
                             </form>
                         </div>
                     </div>
@@ -138,13 +338,13 @@
 
                 <div class="hand">
                     <h5>Your Hand</h5>
-                    <div class="hand-cards cards-row">
+                    <div class="hand-cards">
                         @foreach (var c in self.Hand)
                         {
                             <form method="get" action="@($"/battle/{Code}")">
                                 <input type="hidden" name="details" value="@c.Id" />
                                 <button type="submit" class="card-btn">
-                                    <img class="card-img" src="@(string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
+                                    <img class="card-img @(c.IsDefense ? "defense" : null)" src="@(string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
                                 </button>
                             </form>
                         }
@@ -155,6 +355,60 @@
     </div>
 }
 
+@if (!string.IsNullOrWhiteSpace(gyScope) && gyCards is not null)
+{
+    <dialog open class="modal">
+        <div class="modal-header">
+            <strong>@(gyScope == "self" ? "Your Graveyard" : "Opponent Graveyard")</strong>
+        </div>
+        <div class="modal-body">
+            <div class="cards-row">
+                @foreach (var c in gyCards)
+                {
+                    <form method="get" action="@($"/battle/{Code}")">
+                        <input type="hidden" name="details" value="@c.Id" />
+                        <button type="submit" class="card-btn">
+                            <img class="card-img" src="@(string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
+                        </button>
+                    </form>
+                }
+            </div>
+            <div class="modal-actions">
+                <form method="get" action="@($"/battle/{Code}")">
+                    <button type="submit" class="btn">Close</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+}
+
+@if (!string.IsNullOrWhiteSpace(deckScope) && deckCards is not null)
+{
+    <dialog open class="modal">
+        <div class="modal-header">
+            <strong>Your Deck</strong>
+        </div>
+        <div class="modal-body">
+            <div class="cards-row">
+                @foreach (var c in deckCards)
+                {
+                    <form method="get" action="@($"/battle/{Code}")">
+                        <input type="hidden" name="details" value="@c.Id" />
+                        <button type="submit" class="card-btn">
+                            <img class="card-img" src="@(string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
+                        </button>
+                    </form>
+                }
+            </div>
+            <div class="modal-actions">
+                <form method="get" action="@($"/battle/{Code}")">
+                    <button type="submit" class="btn">Close</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+}
+
 @if (!string.IsNullOrWhiteSpace(detailsId) && selected is not null)
 {
     <dialog open class="modal">
@@ -162,9 +416,9 @@
             <strong>@selected.Name</strong>
         </div>
         <div class="modal-body">
-            <div style="display:flex; gap:16px;">
-                <img src="@(string.IsNullOrWhiteSpace(selected.ImageUrl) ? cardBack : selected.ImageUrl)" alt="@selected.Name" style="width:160px; height:auto;" />
-                <div style="min-width:240px;">
+            <div class="modal-main">
+                <img src="@(string.IsNullOrWhiteSpace(selected.ImageUrl) ? cardBack : selected.ImageUrl)" alt="@selected.Name" class="modal-card" />
+                <div class="modal-info">
                     @if (selected.Level.HasValue && selected.Level.Value > 0)
                     {
                         <div>Level: @selected.Level</div>
@@ -177,176 +431,78 @@
                     {
                         <div>DEF: @selected.Defense</div>
                     }
-                    <div style="margin-top:8px; white-space:pre-wrap;">@selected.Description</div>
-                </div>
-            </div>
+                    <div class="modal-desc">@selected.Description</div>
 
-            <hr />
-
-            <div style="display:grid; grid-template-columns: repeat(2, minmax(240px, 1fr)); gap:12px;">
-                <form method="post" target="silent" action="@($"/battle/{Code}/reveal")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="reveal" value="true" />
-                    <button type="submit">Reveal to opponent</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/reveal")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="reveal" value="false" />
-                    <button type="submit">Hide from opponent</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/facedown")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="faceDown" value="true" />
-                    <button type="submit">Set face-down</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/facedown")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="faceDown" value="false" />
-                    <button type="submit">Set face-up</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/defense")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="defense" value="true" />
-                    <button type="submit">Defense position</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/defense")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="defense" value="false" />
-                    <button type="submit">Attack position</button>
-                </form>
-            </div>
-
-            <h5 style="margin-top:16px;">Move to your zone</h5>
-            <div style="display:grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap:10px;">
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@selfUserId" />
-                    <input type="hidden" name="zone" value="FieldMonster" />
-                    <label>Index <input type="number" name="index" value="0" min="0" max="4" /></label>
-                    <button type="submit">Place as monster</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@selfUserId" />
-                    <input type="hidden" name="zone" value="FieldSpellTrap" />
-                    <label>Index <input type="number" name="index" value="0" min="0" max="4" /></label>
-                    <button type="submit">Place as spell/trap</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@selfUserId" />
-                    <input type="hidden" name="zone" value="FieldMagic" />
-                    <button type="submit">Place as field spell</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@selfUserId" />
-                    <input type="hidden" name="zone" value="Graveyard" />
-                    <button type="submit">Send to graveyard</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@selfUserId" />
-                    <input type="hidden" name="zone" value="Hand" />
-                    <button type="submit">Return to hand</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@selfUserId" />
-                    <input type="hidden" name="zone" value="Deck" />
-                    <input type="hidden" name="deckPos" value="Top" />
-                    <button type="submit">Top of deck</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@selfUserId" />
-                    <input type="hidden" name="zone" value="Deck" />
-                    <input type="hidden" name="deckPos" value="Middle" />
-                    <button type="submit">Middle of deck</button>
-                </form>
-
-                <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="targetUserId" value="@selfUserId" />
-                    <input type="hidden" name="zone" value="Deck" />
-                    <input type="hidden" name="deckPos" value="Bottom" />
-                    <button type="submit">Bottom of deck</button>
-                </form>
-            </div>
-
-            @if (opponentUserId != Guid.Empty)
-            {
-                <h5 style="margin-top:16px;">Move to opponent zone</h5>
-                <div style="display:grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap:10px;">
-                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                        <input type="hidden" name="cardId" value="@selected.Id" />
-                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
-                        <input type="hidden" name="zone" value="FieldMonster" />
-                        <label>Index <input type="number" name="index" value="0" min="0" max="4" /></label>
-                        <button type="submit">Opponent monster zone</button>
+                    <form method="get" action="@($"/battle/{Code}")" class="option-row">
+                        <input type="hidden" name="details" value="@selected.Id" />
+                        <label>
+                            Face
+                            <select name="faceDown">
+                                <option value="false" selected>Up</option>
+                                <option value="true">Down</option>
+                            </select>
+                        </label>
+                        <label>
+                            Position
+                            <select name="defense">
+                                <option value="false" selected>Attack</option>
+                                <option value="true">Defense</option>
+                            </select>
+                        </label>
+                        <button type="submit" name="place" value="@selected.Id" class="btn">Confirm & choose slot</button>
                     </form>
 
-                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <form method="post" action="@($"/battle/{Code}/move")" class="option-row">
                         <input type="hidden" name="cardId" value="@selected.Id" />
-                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
-                        <input type="hidden" name="zone" value="FieldSpellTrap" />
-                        <label>Index <input type="number" name="index" value="0" min="0" max="4" /></label>
-                        <button type="submit">Opponent spell/trap zone</button>
-                    </form>
-
-                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                        <input type="hidden" name="cardId" value="@selected.Id" />
-                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
-                        <input type="hidden" name="zone" value="FieldMagic" />
-                        <button type="submit">Opponent field spell</button>
-                    </form>
-
-                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                        <input type="hidden" name="cardId" value="@selected.Id" />
-                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
+                        <input type="hidden" name="targetUserId" value="@selfUserId" />
                         <input type="hidden" name="zone" value="Hand" />
-                        <button type="submit">Give to opponent hand</button>
-                    </form>
-
-                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                        <input type="hidden" name="cardId" value="@selected.Id" />
-                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
-                        <input type="hidden" name="zone" value="Graveyard" />
-                        <button type="submit">Send to opponent GY</button>
-                    </form>
-
-                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
-                        <input type="hidden" name="cardId" value="@selected.Id" />
-                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
-                        <input type="hidden" name="zone" value="Deck" />
+                        <input type="hidden" name="index" value="0" />
                         <input type="hidden" name="deckPos" value="Top" />
-                        <button type="submit">Opponent deck top</button>
+                        <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
+                        <button type="submit" class="btn">Move to my hand</button>
                     </form>
 
-                    <form method="post" target="silent" action="@($"/battle/{Code}/move")">
+                    <form method="post" action="@($"/battle/{Code}/reveal")" class="option-row">
                         <input type="hidden" name="cardId" value="@selected.Id" />
-                        <input type="hidden" name="targetUserId" value="@opponentUserId" />
-                        <input type="hidden" name="zone" value="Deck" />
-                        <input type="hidden" name="deckPos" value="Bottom" />
-                        <button type="submit">Opponent deck bottom</button>
+                        <input type="hidden" name="reveal" value="true" />
+                        <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
+                        <button type="submit" class="btn">Reveal to opponent</button>
                     </form>
-                </div>
-            }
 
-            <div style="margin-top:16px;">
+                    <form method="post" action="@($"/battle/{Code}/reveal")" class="option-row">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="reveal" value="false" />
+                        <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
+                        <button type="submit" class="btn">Hide from opponent</button>
+                    </form>
+
+                    <form method="post" action="@($"/battle/{Code}/move")" class="option-row">
+                        <input type="hidden" name="cardId" value="@selected.Id" />
+                        <input type="hidden" name="targetUserId" value="@selfUserId" />
+                        <input type="hidden" name="zone" value="Graveyard" />
+                        <input type="hidden" name="index" value="0" />
+                        <input type="hidden" name="deckPos" value="Top" />
+                        <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
+                        <button type="submit" class="btn">Send to Graveyard</button>
+                    </form>
+
+                    @if (oppUserId != Guid.Empty)
+                    {
+                        <form method="post" target="silent" action="@($"/battle/{Code}/move")" class="option-row">
+                            <input type="hidden" name="cardId" value="@selected.Id" />
+                            <input type="hidden" name="targetUserId" value="@oppUserId" />
+                            <input type="hidden" name="zone" value="Hand" />
+                            <input type="hidden" name="index" value="0" />
+                            <input type="hidden" name="deckPos" value="Top" />
+                            <button type="submit" class="btn">Move to opponent hand</button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <div class="modal-actions">
                 <form method="get" action="@($"/battle/{Code}")">
-                    <button type="submit">Close</button>
+                    <button type="submit" class="btn">Close</button>
                 </form>
             </div>
         </div>
@@ -365,8 +521,24 @@
 
     private string? detailsId;
     private RuntimeCard? selected;
+
+    private string? placeCardId;
+    private bool placeFaceDown;
+    private bool placeDefense;
+    private bool isPlacing => !string.IsNullOrWhiteSpace(placeCardId);
+    private RuntimeCard? selectedForPlace;
+
+    private string? gyScope;
+    private List<RuntimeCard>? gyCards;
+
+    private string? deckScope;
+    private List<RuntimeCard>? deckCards;
+
+    private string coinText = "";
+    private string diceText = "";
+
     private Guid selfUserId => match?.GetByConn(connectionId ?? "")?.UserId ?? Guid.Empty;
-    private Guid opponentUserId => match?.GetOpponent(connectionId ?? "")?.UserId ?? Guid.Empty;
+    private Guid oppUserId => match?.GetOpponent(connectionId ?? "")?.UserId ?? Guid.Empty;
 
     private sealed class DeckOption
     {
@@ -382,6 +554,20 @@
         if (string.IsNullOrWhiteSpace(Code))
             Code = query["code"];
         detailsId = query["details"];
+        placeCardId = query["place"];
+        bool.TryParse(query["faceDown"], out placeFaceDown);
+        bool.TryParse(query["defense"], out placeDefense);
+
+        gyScope = query["gy"];
+        deckScope = query["deck"];
+        if (!string.IsNullOrWhiteSpace(gyScope) && match is not null)
+        {
+            BindGyCards();
+        }
+        if (!string.IsNullOrWhiteSpace(deckScope) && match is not null)
+        {
+            BindDeckCards();
+        }
 
         hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("/gamehub"))
@@ -393,6 +579,9 @@
         {
             match = m;
             TryBindSelected();
+            TryBindPlaceSelected();
+            if (!string.IsNullOrWhiteSpace(gyScope)) BindGyCards();
+            if (!string.IsNullOrWhiteSpace(deckScope)) BindDeckCards();
             await InvokeAsync(StateHasChanged);
         });
 
@@ -433,25 +622,67 @@
     {
         selected = null;
         if (match == null || string.IsNullOrWhiteSpace(detailsId)) return;
+        selected = FindById(detailsId);
+    }
 
-        foreach (var p in match.Players)
+    private void TryBindPlaceSelected()
+    {
+        selectedForPlace = null;
+        if (match == null || string.IsNullOrWhiteSpace(placeCardId)) return;
+        selectedForPlace = FindById(placeCardId);
+    }
+
+    private void BindGyCards()
+    {
+        gyCards = null;
+        if (match == null || string.IsNullOrWhiteSpace(gyScope)) return;
+        var self = match.GetByConn(connectionId ?? "");
+        var opp = match.GetOpponent(connectionId ?? "");
+        if (gyScope == "self") gyCards = self?.Graveyard?.ToList() ?? new List<RuntimeCard>();
+        else if (gyScope == "opp") gyCards = opp?.Graveyard?.ToList() ?? new List<RuntimeCard>();
+    }
+
+    private void BindDeckCards()
+    {
+        deckCards = null;
+        if (match == null || string.IsNullOrWhiteSpace(deckScope)) return;
+        var self = match.GetByConn(connectionId ?? "");
+        if (deckScope == "self") deckCards = self?.Deck?.ToList() ?? new List<RuntimeCard>();
+    }
+
+    private RuntimeCard? FindById(string id)
+    {
+        foreach (var p in match!.Players)
         {
-            var h = p.Hand.FirstOrDefault(x => x.Id == detailsId);
-            if (h != null) { selected = h; return; }
+            var h = p.Hand.FirstOrDefault(x => x.Id == id);
+            if (h != null) return h;
 
-            var d = p.Deck.FirstOrDefault(x => x.Id == detailsId);
-            if (d != null) { selected = d; return; }
+            var d = p.Deck.FirstOrDefault(x => x.Id == id);
+            if (d != null) return d;
 
-            var g = p.Graveyard.FirstOrDefault(x => x.Id == detailsId);
-            if (g != null) { selected = g; return; }
+            var g = p.Graveyard.FirstOrDefault(x => x.Id == id);
+            if (g != null) return g;
 
             for (int i = 0; i < p.FieldMonsters.Count; i++)
-                if (p.FieldMonsters[i]?.Id == detailsId) { selected = p.FieldMonsters[i]; return; }
+                if (p.FieldMonsters[i]?.Id == id) return p.FieldMonsters[i];
 
             for (int i = 0; i < p.FieldSpellTraps.Count; i++)
-                if (p.FieldSpellTraps[i]?.Id == detailsId) { selected = p.FieldSpellTraps[i]; return; }
+                if (p.FieldSpellTraps[i]?.Id == id) return p.FieldSpellTraps[i];
 
-            if (p.FieldMagic?.Id == detailsId) { selected = p.FieldMagic; return; }
+            if (p.FieldMagic?.Id == id) return p.FieldMagic;
         }
+        return null;
+    }
+
+    private void TossCoin()
+    {
+        var r = Random.Shared.Next(0, 2);
+        coinText = r == 0 ? "cara" : "coroa";
+    }
+
+    private void RollDice()
+    {
+        var n = Random.Shared.Next(1, 7);
+        diceText = $"• {n}";
     }
 }
