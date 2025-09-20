@@ -1,10 +1,12 @@
-using Microsoft.EntityFrameworkCore;
+using System;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using YuGiOh_Unrestricted.Hubs;
 using YuGiOh_Unrestricted.Hubs.Runtime;
 using YuGiOh_Unrestricted.Infrastructure.Data;
-using YuGiOh_Unrestricted.Infrastructure.Services.Implementations;
 using YuGiOh_Unrestricted.Infrastructure.Services.Interfaces;
+using YuGiOh_Unrestricted.Infrastructure.Services.Implementations;
+using YuGiOh_Unrestricted.Core.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,6 +84,75 @@ app.MapPost("/battle/{code}/draw", async (string code, HttpRequest req, IMatchRu
     var userIdStr = form["userId"].ToString();
     if (Guid.TryParse(userIdStr, out var userId))
         await runtime.DrawOneAsync(code, userId);
+    return Results.NoContent();
+});
+
+app.MapPost("/battle/{code}/reveal", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+{
+    var form = await req.ReadFormAsync();
+    var cardId = form["cardId"].ToString();
+    var revealStr = form["reveal"].ToString();
+    if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(revealStr, out var reveal))
+        await runtime.RevealAsync(code, cardId, reveal);
+    return Results.NoContent();
+});
+
+app.MapPost("/battle/{code}/facedown", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+{
+    var form = await req.ReadFormAsync();
+    var cardId = form["cardId"].ToString();
+    var fdStr = form["faceDown"].ToString();
+    if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(fdStr, out var fd))
+        await runtime.SetFaceDownAsync(code, cardId, fd);
+    return Results.NoContent();
+});
+
+app.MapPost("/battle/{code}/defense", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+{
+    var form = await req.ReadFormAsync();
+    var cardId = form["cardId"].ToString();
+    var defStr = form["defense"].ToString();
+    if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(defStr, out var def))
+        await runtime.SetDefenseAsync(code, cardId, def);
+    return Results.NoContent();
+});
+
+app.MapPost("/battle/{code}/move", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+{
+    var form = await req.ReadFormAsync();
+    var cardId = form["cardId"].ToString();
+    var targetUserStr = form["targetUserId"].ToString();
+    var zoneStr = form["zone"].ToString();
+    var indexStr = form["index"].ToString();
+    var deckPosStr = form["deckPos"].ToString();
+
+    if (string.IsNullOrWhiteSpace(cardId)) return Results.NoContent();
+    if (!Guid.TryParse(targetUserStr, out var targetUserId)) return Results.NoContent();
+
+    var zone = Enum.TryParse<ZoneType>(zoneStr, true, out var z) ? z : ZoneType.Hand;
+    var idx = int.TryParse(indexStr, out var i) ? i : 0;
+    var dpos = Enum.TryParse<DeckPosition>(deckPosStr, true, out var dp) ? dp : DeckPosition.Top;
+
+    await runtime.MoveCardAsync(code, cardId, targetUserId, zone, idx, dpos);
+    return Results.NoContent();
+});
+
+app.MapPost("/battle/{code}/shuffle", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+{
+    var form = await req.ReadFormAsync();
+    var userIdStr = form["userId"].ToString();
+    if (Guid.TryParse(userIdStr, out var uid))
+        await runtime.ShuffleDeckAsync(code, uid);
+    return Results.NoContent();
+});
+
+app.MapPost("/battle/{code}/lp", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+{
+    var form = await req.ReadFormAsync();
+    var targetUserStr = form["targetUserId"].ToString();
+    var deltaStr = form["delta"].ToString();
+    if (Guid.TryParse(targetUserStr, out var uid) && int.TryParse(deltaStr, out var delta))
+        await runtime.AdjustLifeAsync(code, uid, delta);
     return Results.NoContent();
 });
 

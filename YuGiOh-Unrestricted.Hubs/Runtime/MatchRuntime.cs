@@ -16,6 +16,12 @@ public interface IMatchRuntime
     Task SelectDeckAsync(string code, Guid userId, Guid deckId);
     Task SetReadyAsync(string code, Guid userId);
     Task DrawOneAsync(string code, Guid userId);
+    Task RevealAsync(string code, string cardId, bool reveal);
+    Task SetFaceDownAsync(string code, string cardId, bool faceDown);
+    Task SetDefenseAsync(string code, string cardId, bool defense);
+    Task MoveCardAsync(string code, string cardId, Guid targetUserId, ZoneType zone, int targetIndex, DeckPosition deckPos);
+    Task ShuffleDeckAsync(string code, Guid userId);
+    Task AdjustLifeAsync(string code, Guid targetUserId, int delta);
     RuntimeMatch GetOrCreate(string code);
 }
 
@@ -146,10 +152,146 @@ public class MatchRuntime : IMatchRuntime
 
             var c = me.Deck[0];
             me.Deck.RemoveAt(0);
+            c.IsFaceDown = false;
             me.Hand.Add(c);
         }
 
         return Broadcast(code);
+    }
+
+    public Task RevealAsync(string code, string cardId, bool reveal)
+        => WithCard(code, cardId, c => c.IsRevealed = reveal);
+
+    public Task SetFaceDownAsync(string code, string cardId, bool faceDown)
+        => WithCard(code, cardId, c => c.IsFaceDown = faceDown);
+
+    public Task SetDefenseAsync(string code, string cardId, bool defense)
+        => WithCard(code, cardId, c => c.IsDefense = defense);
+
+    public Task MoveCardAsync(string code, string cardId, Guid targetUserId, ZoneType zone, int targetIndex, DeckPosition deckPos)
+    {
+        lock (_lock)
+        {
+            if (!_matches.TryGetValue(code, out var m)) return Task.CompletedTask;
+            var owner = m.GetByUser(targetUserId) ?? m.Players.FirstOrDefault();
+            if (owner == null) return Task.CompletedTask;
+
+            var card = RemoveFromWherever(m, cardId);
+            if (card == null) return Task.CompletedTask;
+
+            AddTo(owner, zone, card, targetIndex, deckPos);
+        }
+        return Broadcast(code);
+    }
+
+    public Task ShuffleDeckAsync(string code, Guid userId)
+    {
+        lock (_lock)
+        {
+            if (!_matches.TryGetValue(code, out var m)) return Task.CompletedTask;
+            var owner = m.GetByUser(userId);
+            if (owner == null) return Task.CompletedTask;
+            var rnd = new Random();
+            owner.Deck = owner.Deck.OrderBy(_ => rnd.Next()).ToList();
+        }
+        return Broadcast(code);
+    }
+
+    public Task AdjustLifeAsync(string code, Guid targetUserId, int delta)
+    {
+        lock (_lock)
+        {
+            if (!_matches.TryGetValue(code, out var m)) return Task.CompletedTask;
+            var p = m.GetByUser(targetUserId);
+            if (p == null) return Task.CompletedTask;
+            p.LifePoints += delta;
+        }
+        return Broadcast(code);
+    }
+
+    private Task WithCard(string code, string cardId, Action<RuntimeCard> act)
+    {
+        lock (_lock)
+        {
+            if (!_matches.TryGetValue(code, out var m)) return Task.CompletedTask;
+            var card = FindCard(m, cardId);
+            if (card == null) return Task.CompletedTask;
+            act(card);
+        }
+        return Broadcast(code);
+    }
+
+    private RuntimeCard? FindCard(RuntimeMatch m, string cardId)
+    {
+        foreach (var p in m.Players)
+        {
+            var h = p.Hand.FirstOrDefault(c => c.Id == cardId);
+            if (h != null) return h;
+
+            var d = p.Deck.FirstOrDefault(c => c.Id == cardId);
+            if (d != null) return d;
+
+            var g = p.Graveyard.FirstOrDefault(c => c.Id == cardId);
+            if (g != null) return g;
+
+            foreach (var c in p.FieldMonsters) if (c?.Id == cardId) return c;
+            foreach (var c in p.FieldSpellTraps) if (c?.Id == cardId) return c;
+            if (p.FieldMagic?.Id == cardId) return p.FieldMagic;
+        }
+        return null;
+    }
+
+    private RuntimeCard? RemoveFromWherever(RuntimeMatch m, string cardId)
+    {
+        foreach (var p in m.Players)
+        {
+            var hi = p.Hand.FindIndex(c => c.Id == cardId);
+            if (hi >= 0) { var c = p.Hand[hi]; p.Hand.RemoveAt(hi); return c; }
+
+            var di = p.Deck.FindIndex(c => c.Id == cardId);
+            if (di >= 0) { var c = p.Deck[di]; p.Deck.RemoveAt(di); return c; }
+
+            var gi = p.Graveyard.FindIndex(c => c.Id == cardId);
+            if (gi >= 0) { var c = p.Graveyard[gi]; p.Graveyard.RemoveAt(gi); return c; }
+
+            for (int i = 0; i < p.FieldMonsters.Count; i++)
+                if (p.FieldMonsters[i]?.Id == cardId) { var c = p.FieldMonsters[i]; p.FieldMonsters[i] = null; return c; }
+
+            for (int i = 0; i < p.FieldSpellTraps.Count; i++)
+                if (p.FieldSpellTraps[i]?.Id == cardId) { var c = p.FieldSpellTraps[i]; p.FieldSpellTraps[i] = null; return c; }
+
+            if (p.FieldMagic?.Id == cardId) { var c = p.FieldMagic; p.FieldMagic = null; return c; }
+        }
+        return null;
+    }
+
+    private void AddTo(RuntimePlayer owner, ZoneType zone, RuntimeCard card, int idx, DeckPosition deckPos)
+    {
+        switch (zone)
+        {
+            case ZoneType.Hand:
+                owner.Hand.Add(card);
+                break;
+            case ZoneType.Deck:
+                if (deckPos == DeckPosition.Top) owner.Deck.Insert(0, card);
+                else if (deckPos == DeckPosition.Bottom) owner.Deck.Add(card);
+                else owner.Deck.Insert(owner.Deck.Count / 2, card);
+                break;
+            case ZoneType.Graveyard:
+                owner.Graveyard.Add(card);
+                break;
+            case ZoneType.FieldMonster:
+                idx = Math.Clamp(idx, 0, 4);
+                owner.FieldMonsters[idx] = card;
+                break;
+            case ZoneType.FieldSpellTrap:
+                idx = Math.Clamp(idx, 0, 4);
+                owner.FieldSpellTraps[idx] = card;
+                break;
+            case ZoneType.FieldMagic:
+                owner.FieldMagic = card;
+                break;
+        }
     }
 
     private Task Broadcast(string code)

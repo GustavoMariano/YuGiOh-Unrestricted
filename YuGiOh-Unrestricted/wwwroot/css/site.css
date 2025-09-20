@@ -141,6 +141,8 @@ body {
         border-style: dashed;
     }
 
+
+
 .cards-row {
     display: flex;
     gap: 6px;
@@ -151,4 +153,31 @@ body {
     width: 80px;
     height: auto;
     border-radius: 4px;
+}
+
+.card-btn {
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.modal {
+    border: none;
+    border-radius: 8px;
+    max-width: 900px;
+    width: 100%;
+}
+
+.modal::backdrop {
+        background: rgba(0,0,0,.5);
+    }
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
