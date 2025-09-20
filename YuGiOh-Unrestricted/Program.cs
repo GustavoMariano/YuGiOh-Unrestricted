@@ -177,21 +177,15 @@ app.MapPost("/battle/{code}/lp", async (string code, HttpRequest req, IMatchRunt
     return Results.NoContent();
 });
 
-app.MapPost("/battle/{code}/coin", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+app.MapPost("/battle/{code}/coin-shared", async (string code, IMatchRuntime runtime) =>
 {
-    var form = await req.ReadFormAsync();
-    var userIdStr = form["userId"].ToString();
-    if (Guid.TryParse(userIdStr, out var uid))
-        await runtime.TossCoinAsync(code, uid);
+    await runtime.TossCoinSharedAsync(code);
     return Results.NoContent();
 });
 
-app.MapPost("/battle/{code}/dice", async (string code, HttpRequest req, IMatchRuntime runtime) =>
+app.MapPost("/battle/{code}/dice-shared", async (string code, IMatchRuntime runtime) =>
 {
-    var form = await req.ReadFormAsync();
-    var userIdStr = form["userId"].ToString();
-    if (Guid.TryParse(userIdStr, out var uid))
-        await runtime.RollDiceAsync(code, uid);
+    await runtime.RollDiceSharedAsync(code);
     return Results.NoContent();
 });
 

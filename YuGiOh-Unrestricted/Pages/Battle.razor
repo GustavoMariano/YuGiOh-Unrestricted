@@ -138,7 +138,7 @@
                             }
                             @if (c is not null)
                             {
-                                var canOpen = !c.IsFaceDown && (c.IsRevealed || true);
+                                var canOpen = !c.IsFaceDown && c.IsRevealed;
                                 if (canOpen)
                                 {
                                     <form method="get" action="@($"/battle/{Code}")">
@@ -183,7 +183,7 @@
                             }
                             @if (c is not null)
                             {
-                                var canOpen = !c.IsFaceDown && (c.IsRevealed || true);
+                                var canOpen = !c.IsFaceDown && c.IsRevealed;
                                 if (canOpen)
                                 {
                                     <form method="get" action="@($"/battle/{Code}")">
@@ -222,7 +222,7 @@
                         else
                         {
                             var c = opp.FieldMagic;
-                            var canOpen = !c.IsFaceDown && (c.IsRevealed || true);
+                            var canOpen = !c.IsFaceDown && c.IsRevealed;
                             if (canOpen)
                             {
                                 <form method="get" action="@($"/battle/{Code}")">
@@ -242,6 +242,21 @@
             </div>
         }
 
+        <div class="center-controls">
+            <div class="center-buttons">
+                <form method="post" target="silent" action="@($"/battle/{Code}/coin-shared")">
+                    <button type="submit" class="btn">Coin</button>
+                </form>
+                <form method="post" target="silent" action="@($"/battle/{Code}/dice-shared")" style="margin-left:6px;">
+                    <button type="submit" class="btn">Dice</button>
+                </form>
+            </div>
+            <div class="center-results">
+                <span>Coin: @(match.IsCoinRolling ? "???" : string.IsNullOrWhiteSpace(match.SharedCoin) ? "-" : match.SharedCoin)</span>
+                <span style="margin-left:12px;">Dice: @(match.IsDiceRolling ? "???" : string.IsNullOrWhiteSpace(match.SharedDice) ? "-" : match.SharedDice)</span>
+            </div>
+        </div>
+
         @if (self is not null)
         {
             <div class="player player-bottom">
@@ -253,15 +268,6 @@
                         <button type="submit" class="btn">Apply</button>
                     </form>
                     <span style="margin-left:8px;">LP: @self.LifePoints</span>
-                    <form method="post" target="silent" action="@($"/battle/{Code}/coin")" style="display:inline-block; margin-left:8px;">
-                        <input type="hidden" name="userId" value="@selfUserId" />
-                        <button type="submit" class="btn">Moeda</button>
-                    </form>
-                    <form method="post" target="silent" action="@($"/battle/{Code}/dice")" style="display:inline-block; margin-left:6px;">
-                        <input type="hidden" name="userId" value="@selfUserId" />
-                        <button type="submit" class="btn">Dado</button>
-                    </form>
-                    <span style="margin-left:6px;">@self.LastCoin @((string.IsNullOrWhiteSpace(self.LastDice) ? "" : $"• {self.LastDice}"))</span>
                 </div>
 
                 <div class="row">
@@ -371,6 +377,10 @@
                                 <input type="hidden" name="userId" value="@App.UserId" />
                                 <button type="submit" class="btn">Draw 1</button>
                             </form>
+                            <form method="post" target="silent" action="@($"/battle/{Code}/shuffle")">
+                                <input type="hidden" name="userId" value="@App.UserId" />
+                                <button type="submit" class="btn">Shuffle</button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -404,20 +414,12 @@
             <div class="cards-row">
                 @foreach (var c in gyCards)
                 {
-                    var canOpen = gyScope == "self" || (!c.IsFaceDown && c.IsRevealed);
-                    if (canOpen)
-                    {
-                        <form method="get" action="@($"/battle/{Code}")">
-                            <input type="hidden" name="details" value="@c.Id" />
-                            <button type="submit" class="card-btn">
-                                <img class="card-img" src="@(string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
-                            </button>
-                        </form>
-                    }
-                    else
-                    {
-                        <img class="card-img" src="@cardBack" alt="Card back" />
-                    }
+                    <form method="get" action="@($"/battle/{Code}")">
+                        <input type="hidden" name="details" value="@c.Id" />
+                        <button type="submit" class="card-btn">
+                            <img class="card-img" src="@(string.IsNullOrWhiteSpace(c.ImageUrl) ? cardBack : c.ImageUrl)" alt="@c.Name" title="@c.Name" />
+                        </button>
+                    </form>
                 }
             </div>
             <div class="modal-actions">

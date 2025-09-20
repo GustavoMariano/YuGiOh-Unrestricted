@@ -22,8 +22,8 @@ public interface IMatchRuntime
     Task MoveCardAsync(string code, string cardId, Guid targetUserId, ZoneType zone, int targetIndex, DeckPosition deckPos);
     Task ShuffleDeckAsync(string code, Guid userId);
     Task AdjustLifeAsync(string code, Guid targetUserId, int delta);
-    Task TossCoinAsync(string code, Guid userId);
-    Task RollDiceAsync(string code, Guid userId);
+    Task TossCoinSharedAsync(string code);
+    Task RollDiceSharedAsync(string code);
     RuntimeMatch GetOrCreate(string code);
 }
 
@@ -155,6 +155,7 @@ public class MatchRuntime : IMatchRuntime
             var c = me.Deck[0];
             me.Deck.RemoveAt(0);
             c.IsFaceDown = false;
+            c.IsRevealed = false;
             me.Hand.Add(c);
         }
 
@@ -182,6 +183,17 @@ public class MatchRuntime : IMatchRuntime
             if (card == null) return Task.CompletedTask;
 
             AddTo(owner, zone, card, targetIndex, deckPos);
+
+            if (zone == ZoneType.Graveyard)
+            {
+                card.IsFaceDown = false;
+                card.IsRevealed = true;
+            }
+            else if (zone == ZoneType.Hand)
+            {
+                card.IsFaceDown = false;
+                card.IsRevealed = false;
+            }
         }
         return Broadcast(code);
     }
@@ -211,28 +223,44 @@ public class MatchRuntime : IMatchRuntime
         return Broadcast(code);
     }
 
-    public Task TossCoinAsync(string code, Guid userId)
+    public async Task TossCoinSharedAsync(string code)
     {
+        RuntimeMatch? m;
         lock (_lock)
         {
-            if (!_matches.TryGetValue(code, out var m)) return Task.CompletedTask;
-            var p = m.GetByUser(userId);
-            if (p == null) return Task.CompletedTask;
-            p.LastCoin = Random.Shared.Next(0, 2) == 0 ? "cara" : "coroa";
+            if (!_matches.TryGetValue(code, out m)) return;
+            m.IsCoinRolling = true;
+            m.SharedCoin = "???";
         }
-        return Broadcast(code);
+        await Broadcast(code);
+        await Task.Delay(500);
+        lock (_lock)
+        {
+            if (m == null) return;
+            m.IsCoinRolling = false;
+            m.SharedCoin = Random.Shared.Next(0, 2) == 0 ? "Heads" : "Tails";
+        }
+        await Broadcast(code);
     }
 
-    public Task RollDiceAsync(string code, Guid userId)
+    public async Task RollDiceSharedAsync(string code)
     {
+        RuntimeMatch? m;
         lock (_lock)
         {
-            if (!_matches.TryGetValue(code, out var m)) return Task.CompletedTask;
-            var p = m.GetByUser(userId);
-            if (p == null) return Task.CompletedTask;
-            p.LastDice = Random.Shared.Next(1, 7).ToString();
+            if (!_matches.TryGetValue(code, out m)) return;
+            m.IsDiceRolling = true;
+            m.SharedDice = "???";
         }
-        return Broadcast(code);
+        await Broadcast(code);
+        await Task.Delay(500);
+        lock (_lock)
+        {
+            if (m == null) return;
+            m.IsDiceRolling = false;
+            m.SharedDice = Random.Shared.Next(1, 7).ToString();
+        }
+        await Broadcast(code);
     }
 
     private Task WithCard(string code, string cardId, Action<RuntimeCard> act)

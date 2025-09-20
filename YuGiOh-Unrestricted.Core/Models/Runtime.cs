@@ -28,8 +28,6 @@ public class RuntimePlayer
     public string Name { get; set; } = "";
     public int LifePoints { get; set; } = 8000;
     public bool IsReady { get; set; } = false;
-    public string LastCoin { get; set; } = "";
-    public string LastDice { get; set; } = "";
 
     public List<RuntimeCard> Deck { get; set; } = new();
     public List<RuntimeCard> Hand { get; set; } = new();
@@ -45,6 +43,11 @@ public class RuntimeMatch
     public List<RuntimePlayer> Players { get; set; } = new();
     public bool Started { get; set; } = false;
     public int Turn { get; set; } = 1;
+
+    public string SharedCoin { get; set; } = "";
+    public string SharedDice { get; set; } = "";
+    public bool IsCoinRolling { get; set; }
+    public bool IsDiceRolling { get; set; }
 
     public RuntimePlayer? GetByConn(string connId) => Players.FirstOrDefault(p => p.ConnectionId == connId);
     public RuntimePlayer? GetOpponent(string connId) => Players.FirstOrDefault(p => p.ConnectionId != connId);

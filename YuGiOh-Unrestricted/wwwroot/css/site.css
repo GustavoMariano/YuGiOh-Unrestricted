@@ -71,7 +71,6 @@ body {
     background: #4c2b27;
     color: #fff;
     flex-direction: column;
-    gap: 6px;
 }
 
 .graveyard {
@@ -108,52 +107,20 @@ body {
     cursor: pointer;
 }
 
-.draw-box {
-    margin-top: 6px;
-    display: flex;
-    gap: 6px;
-}
-
-.player-info.me {
-    color: #2196f3;
-    font-weight: 700;
-}
-
-.player-info.opp {
-    color: #f44336;
-    font-weight: 700;
-}
-
-.join-container input {
-    margin-right: 6px;
-}
-
-.btn {
-    padding: .5rem .9rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    text-decoration: none;
-    display: inline-block;
-}
-
-    .btn.disabled {
-        opacity: .5;
-        pointer-events: none;
-        border-style: dashed;
-    }
-
-.cards-row {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    align-items: flex-start;
-}
-
 .card-img {
     width: 80px;
     height: auto;
     border-radius: 4px;
-    object-fit: contain;
+}
+
+.slot-img {
+    width: 84px;
+    height: 118px;
+    border-radius: 4px;
+}
+
+.defense {
+    transform: rotate(90deg);
 }
 
 .card-btn {
@@ -162,19 +129,6 @@ body {
     background: transparent;
     cursor: pointer;
 }
-
-.slot-img {
-    width: 80px;
-    height: auto;
-    border-radius: 4px;
-    object-fit: contain;
-}
-
-    .slot-img.defense,
-    .card-img.defense {
-        transform: rotate(90deg);
-        transform-origin: center center;
-    }
 
 .slot-empty {
     width: 80px;
@@ -199,73 +153,124 @@ body {
         background: rgba(0,0,0,.5);
     }
 
-.modal-body {
-    padding: 12px;
-}
-
 .modal-main-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    align-items: start;
 }
 
 .modal-card {
-    width: 180px;
+    width: 200px;
     height: auto;
+    display: block;
+    margin: 0 auto;
     border-radius: 6px;
 }
 
 .modal-info-col {
-    width: 100%;
-    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .info-title {
+    font-size: 18px;
     font-weight: 700;
-    margin-bottom: 4px;
-    text-align: center;
 }
 
 .info-row {
-    text-align: center;
-    margin: 2px 0;
+    margin-top: 2px;
 }
 
 .modal-desc {
-    margin-top: 8px;
-    font-size: .95rem;
-    line-height: 1.25rem;
-    white-space: pre-wrap;
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.2;
 }
 
 .options-grid {
+    margin-top: 14px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    align-items: start;
 }
 
-    .options-grid .opt-full {
-        grid-column: 1 / -1;
-    }
+.opt-span-2 {
+    grid-column: span 2;
+    display: grid;
+    grid-template-columns: repeat(5, auto);
+    gap: 8px;
+    align-items: center;
+}
 
-    .options-grid .opt-span-2 {
-        grid-column: 1 / -1;
-        display: grid;
-        grid-template-columns: auto auto auto;
-        gap: 8px;
-        align-items: center;
-    }
+.opt-full {
+    grid-column: span 2;
+}
+
+.modal-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
 
 .placing-bar {
-    background: #2f2f2f;
-    border: 1px solid #444;
+    position: sticky;
+    top: 48px;
+    z-index: 5;
+    background: #444;
     padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 12px;
+    border-radius: 6px;
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
+}
+
+.player-info.me {
+    color: #2196f3;
+    font-weight: 700;
+}
+
+.player-info.opp {
+    color: #f44336;
+    font-weight: 700;
+}
+
+.join-container input {
+    margin-right: 6px;
+}
+
+.btn {
+    padding: .5rem .9rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-block;
+    background: #2f2f2f;
+    color: #fff;
+}
+
+    .btn.disabled {
+        opacity: .5;
+        pointer-events: none;
+        border-style: dashed;
+    }
+
+.cards-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.center-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0;
+}
+
+.center-results {
+    font-weight: 700;
 }
