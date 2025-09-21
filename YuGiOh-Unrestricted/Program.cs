@@ -135,7 +135,6 @@ app.MapPost("/battle/{code}/move", async (string code, HttpRequest req, IMatchRu
     var indexStr = form["index"].ToString();
     var deckPosStr = form["deckPos"].ToString();
 
-    // Opções escolhidas no modal
     var fdStr = form["faceDown"].ToString();
     var defStr = form["defense"].ToString();
 
@@ -149,40 +148,37 @@ app.MapPost("/battle/{code}/move", async (string code, HttpRequest req, IMatchRu
     var fd = bool.TryParse(fdStr, out var fdTmp) ? fdTmp : false;
     var def = bool.TryParse(defStr, out var defTmp) ? defTmp : false;
 
-    // Move primeiro
     await runtime.MoveCardAsync(code, cardId, targetUserId, zone, idx, dpos);
 
-    // Ajusta estado (face/posição)
     await runtime.SetFaceDownAsync(code, cardId, fd);
     await runtime.SetDefenseAsync(code, cardId, def);
 
-    // Regras de visibilidade conforme destino
     switch (zone)
     {
         case ZoneType.FieldMonster:
         case ZoneType.FieldSpellTrap:
         case ZoneType.FieldMagic:
-            // No campo: se não estiver face down, deve ficar visível para o oponente
             await runtime.RevealAsync(code, cardId, !fd);
             break;
 
         case ZoneType.Graveyard:
-            // No GY: sempre face up e visível para ambos
             await runtime.SetFaceDownAsync(code, cardId, false);
             await runtime.RevealAsync(code, cardId, true);
             break;
 
         case ZoneType.Hand:
-            // Na mão: por padrão NUNCA revelada (só via ação explícita)
             await runtime.RevealAsync(code, cardId, false);
             break;
 
         case ZoneType.Deck:
-            // No deck: por padrão consideramos oculto/virado para baixo e não revelado
             await runtime.SetFaceDownAsync(code, cardId, true);
             await runtime.RevealAsync(code, cardId, false);
             break;
     }
+
+    var returnTo = form["returnTo"].ToString();
+    if (!string.IsNullOrWhiteSpace(returnTo))
+        return Results.Redirect(returnTo);
 
     return Results.NoContent();
 });

@@ -132,10 +132,10 @@
                                     <input type="hidden" name="zone" value="FieldSpellTrap" />
                                     <input type="hidden" name="index" value="@i" />
                                     <input type="hidden" name="deckPos" value="Top" />
-                                    <!-- ADICIONADOS -->
                                     <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                     <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                     <input type="hidden" name="placeFlow" value="1" />
+                                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                                     <button type="submit" class="btn">Place @(i + 1)</button>
                                 </form>
                             }
@@ -179,10 +179,10 @@
                                     <input type="hidden" name="zone" value="FieldMonster" />
                                     <input type="hidden" name="index" value="@i" />
                                     <input type="hidden" name="deckPos" value="Top" />
-                                    <!-- ADICIONADOS -->
                                     <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                     <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                     <input type="hidden" name="placeFlow" value="1" />
+                                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                                     <button type="submit" class="btn">Place @(i + 1)</button>
                                 </form>
                             }
@@ -215,10 +215,10 @@
                                 <input type="hidden" name="zone" value="FieldMagic" />
                                 <input type="hidden" name="index" value="0" />
                                 <input type="hidden" name="deckPos" value="Top" />
-                                <!-- ADICIONADOS -->
                                 <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                 <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                 <input type="hidden" name="placeFlow" value="1" />
+                                <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                                 <button type="submit" class="btn">Place</button>
                             </form>
                         }
@@ -288,10 +288,10 @@
                                 <input type="hidden" name="zone" value="FieldMagic" />
                                 <input type="hidden" name="index" value="0" />
                                 <input type="hidden" name="deckPos" value="Top" />
-                                <!-- ADICIONADOS -->
                                 <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                 <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                 <input type="hidden" name="placeFlow" value="1" />
+                                <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                                 <button type="submit" class="btn">Place</button>
                             </form>
                         }
@@ -323,10 +323,10 @@
                                     <input type="hidden" name="zone" value="FieldMonster" />
                                     <input type="hidden" name="index" value="@i" />
                                     <input type="hidden" name="deckPos" value="Top" />
-                                    <!-- ADICIONADOS -->
                                     <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                     <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                     <input type="hidden" name="placeFlow" value="1" />
+                                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                                     <button type="submit" class="btn">Place @(i + 1)</button>
                                 </form>
                             }
@@ -362,10 +362,10 @@
                                     <input type="hidden" name="zone" value="FieldSpellTrap" />
                                     <input type="hidden" name="index" value="@i" />
                                     <input type="hidden" name="deckPos" value="Top" />
-                                    <!-- ADICIONADOS -->
                                     <input type="hidden" name="faceDown" value="@placeFaceDown.ToString().ToLower()" />
                                     <input type="hidden" name="defense" value="@placeDefense.ToString().ToLower()" />
                                     <input type="hidden" name="placeFlow" value="1" />
+                                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
                                     <button type="submit" class="btn">Place @(i + 1)</button>
                                 </form>
                             }
@@ -658,6 +658,7 @@
         {
             if (App.UserId != Guid.Empty)
             {
+                await hub.InvokeAsync("JoinGroup", Code);
                 await hub.InvokeAsync("JoinBattle", Code, App.Nickname, App.UserId);
                 await hub.InvokeAsync("RequestSync", Code);
                 joined = true;
