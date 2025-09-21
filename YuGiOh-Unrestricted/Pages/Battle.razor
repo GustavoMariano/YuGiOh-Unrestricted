@@ -528,6 +528,23 @@
                     <button type="submit" class="btn">Send to Graveyard</button>
                 </form>
 
+                <form method="post" action="@($"/battle/{Code}/facedown")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
+                    <input type="hidden" name="faceDown" value="@((!selected.IsFaceDown).ToString().ToLower())" />
+                    <input type="hidden" name="reveal" value="@((!selected.IsFaceDown).ToString().ToLower())" />
+                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
+                    <button type="submit" class="btn">Flip face</button>
+                </form>
+
+                <form method="post" action="@($"/battle/{Code}/defense")">
+                    <input type="hidden" name="cardId" value="@selected.Id" />
+                    <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
+                    <input type="hidden" name="defense" value="@((!selected.IsDefense).ToString().ToLower())" />
+                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
+                    <button type="submit" class="btn">Switch position</button>
+                </form>
+
                 <form method="post" action="@($"/battle/{Code}/move")">
                     <input type="hidden" name="cardId" value="@selected.Id" />
                     <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
@@ -552,22 +569,6 @@
                         <button type="submit" class="btn">Move to opponent hand</button>
                     </form>
                 }
-
-                <form method="post" action="@($"/battle/{Code}/reveal")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
-                    <input type="hidden" name="reveal" value="true" />
-                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
-                    <button type="submit" class="btn">Reveal to opponent</button>
-                </form>
-
-                <form method="post" action="@($"/battle/{Code}/reveal")">
-                    <input type="hidden" name="cardId" value="@selected.Id" />
-                    <input type="hidden" name="ownerUserId" value="@GetOwnerUserId(selected.Id)" />
-                    <input type="hidden" name="reveal" value="false" />
-                    <input type="hidden" name="returnTo" value="@($"/battle/{Code}")" />
-                    <button type="submit" class="btn">Hide from opponent</button>
-                </form>
 
                 <form method="get" action="@($"/battle/{Code}")" class="opt-full">
                     <button type="submit" class="btn">Close</button>

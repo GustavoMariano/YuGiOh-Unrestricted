@@ -102,8 +102,17 @@ app.MapPost("/battle/{code}/facedown", async (string code, HttpRequest req, IMat
     var form = await req.ReadFormAsync();
     var cardId = form["cardId"].ToString();
     var fdStr = form["faceDown"].ToString();
+
     if (!string.IsNullOrWhiteSpace(cardId) && bool.TryParse(fdStr, out var fd))
+    {
         await runtime.SetFaceDownAsync(code, cardId, fd);
+
+        if (!fd)
+            await runtime.RevealAsync(code, cardId, true);
+        else
+            await runtime.RevealAsync(code, cardId, false);
+    }
+
     return Results.NoContent();
 });
 
