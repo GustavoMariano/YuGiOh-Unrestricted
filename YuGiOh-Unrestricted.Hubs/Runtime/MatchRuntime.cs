@@ -208,45 +208,57 @@ public class MatchRuntime : IMatchRuntime
 
     public async Task TossCoinSharedAsync(string code)
     {
+        RuntimeMatch? match;
         lock (_lock)
         {
-            if (!_matches.TryGetValue(code, out var m)) return;
-            m.IsCoinRolling = true;
-            m.SharedCoin = "";
+            if (!_matches.TryGetValue(code, out match)) return;
+            match.IsCoinRolling = true;
+            match.SharedCoin = "";
         }
+
         await Broadcast(code);
-        await Task.Delay(500);
-        var v = new Random().Next(2) == 0 ? "Heads" : "Tails";
+
+        await Task.Delay(800);
+
+        var result = new Random().Next(2) == 0 ? "Heads" : "Tails";
+
         lock (_lock)
         {
-            if (_matches.TryGetValue(code, out var m))
+            if (_matches.TryGetValue(code, out match))
             {
-                m.IsCoinRolling = false;
-                m.SharedCoin = v;
+                match.IsCoinRolling = false;
+                match.SharedCoin = result;
             }
         }
+
         await Broadcast(code);
     }
 
     public async Task RollDiceSharedAsync(string code)
     {
+        RuntimeMatch? match;
         lock (_lock)
         {
-            if (!_matches.TryGetValue(code, out var m)) return;
-            m.IsDiceRolling = true;
-            m.SharedDice = "";
+            if (!_matches.TryGetValue(code, out match)) return;
+            match.IsDiceRolling = true;
+            match.SharedDice = "";
         }
+
         await Broadcast(code);
-        await Task.Delay(500);
-        var v = new Random().Next(1, 7).ToString();
+
+        await Task.Delay(800);
+
+        var result = new Random().Next(1, 7).ToString();
+
         lock (_lock)
         {
-            if (_matches.TryGetValue(code, out var m))
+            if (_matches.TryGetValue(code, out match))
             {
-                m.IsDiceRolling = false;
-                m.SharedDice = v;
+                match.IsDiceRolling = false;
+                match.SharedDice = result;
             }
         }
+
         await Broadcast(code);
     }
 

@@ -654,24 +654,27 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!joined && hub != null && !string.IsNullOrWhiteSpace(Code) && App.UserId != Guid.Empty)
+        if (!joined && hub != null && !string.IsNullOrWhiteSpace(Code))
         {
-            await hub.InvokeAsync("JoinBattle", Code, App.Nickname, App.UserId);
-            await hub.InvokeAsync("RequestSync", Code);
-            joined = true;
-
-            if (deckOptions == null)
+            if (App.UserId != Guid.Empty)
             {
-                var decks = await DecksSvc.GetUserDecksAsync(App.UserId);
-                deckOptions = decks?
-                    .Select(d => new DeckOption
-                    {
-                        Id = d.Id,
-                        Name = d.Name,
-                        Total = d.Cards?.Sum(c => c.Count) ?? 0
-                    })
-                    .ToList() ?? new List<DeckOption>();
-                StateHasChanged();
+                await hub.InvokeAsync("JoinBattle", Code, App.Nickname, App.UserId);
+                await hub.InvokeAsync("RequestSync", Code);
+                joined = true;
+
+                if (deckOptions == null)
+                {
+                    var decks = await DecksSvc.GetUserDecksAsync(App.UserId);
+                    deckOptions = decks?
+                        .Select(d => new DeckOption
+                        {
+                            Id = d.Id,
+                            Name = d.Name,
+                            Total = d.Cards?.Sum(c => c.Count) ?? 0
+                        })
+                        .ToList() ?? new List<DeckOption>();
+                    StateHasChanged();
+                }
             }
         }
     }
