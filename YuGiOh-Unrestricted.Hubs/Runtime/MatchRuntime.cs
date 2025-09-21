@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using YuGiOh_Unrestricted.Core.Models;
 using YuGiOh_Unrestricted.Infrastructure.Data;
 
@@ -350,7 +351,11 @@ public class MatchRuntime : IMatchRuntime
     private Task Broadcast(string code)
     {
         if (_matches.TryGetValue(code, out var m))
-            return _hub.Clients.Group(code).SendAsync("UpdateMatch", m);
+        {
+            var json = JsonSerializer.Serialize(m);
+            var snapshot = JsonSerializer.Deserialize<RuntimeMatch>(json);
+            return _hub.Clients.Group(code).SendAsync("UpdateMatch", snapshot);
+        }
         return Task.CompletedTask;
     }
 }

@@ -643,13 +643,16 @@
             await InvokeAsync(StateHasChanged);
         });
 
-        await hub.StartAsync();
-
-        if (!string.IsNullOrWhiteSpace(Code))
+        hub.Reconnected += async _ =>
         {
-            await hub.InvokeAsync("JoinGroup", Code);
-            await hub.InvokeAsync("RequestSync", Code);
-        }
+            if (!string.IsNullOrWhiteSpace(Code) && App.UserId != Guid.Empty)
+            {
+                await hub.InvokeAsync("JoinBattle", Code, App.Nickname, App.UserId);
+                await hub.InvokeAsync("RequestSync", Code);
+            }
+        };
+
+        await hub.StartAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -658,7 +661,6 @@
         {
             if (App.UserId != Guid.Empty)
             {
-                await hub.InvokeAsync("JoinGroup", Code);
                 await hub.InvokeAsync("JoinBattle", Code, App.Nickname, App.UserId);
                 await hub.InvokeAsync("RequestSync", Code);
                 joined = true;

@@ -21,8 +21,14 @@ public class GameHub : Hub
     public Task JoinGroup(string battleCode)
         => Groups.AddToGroupAsync(Context.ConnectionId, battleCode);
 
-    public Task JoinBattle(string battleCode, string playerName, Guid userId)
-        => _runtime.AttachConnectionAsync(battleCode, userId, playerName, Context.ConnectionId);
+    public async Task JoinBattle(string battleCode, string playerName, Guid userId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, battleCode);
+        await _runtime.AttachConnectionAsync(battleCode, userId, playerName, Context.ConnectionId);
+        var match = _runtime.GetOrCreate(battleCode);
+        await Clients.Caller.SendAsync("UpdateMatch", match);
+    }
+
 
     public async Task RequestSync(string battleCode)
     {
