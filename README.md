@@ -35,7 +35,7 @@ All Yu-Gi-Oh! characters, cards, and names are trademarks of their respective ow
 
 ## Author
 
-Developed with 🎴 ♥️ by **Gustavo Mariano**  
+Developed by **Gustavo Mariano**  
 [GitHub](https://github.com/GustavoMariano) | [LinkedIn](https://www.linkedin.com/in/gustavo-mariano)
 
 ---
