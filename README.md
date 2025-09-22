@@ -11,7 +11,7 @@ It provides an interactive platform for friendly duels and showcases real-time g
 - **Deck Builder** – Build and customize your own decks through a user-friendly web interface. Create the perfect deck from a vast card pool and save it for your next duel.  
 - **Real-Time Duels** – Challenge other players in live duels with real-time gameplay. Game state is synchronized instantly between players using SignalR, making each duel feel responsive and authentic.  
 - **Card Import via API** – Enjoy an up-to-date card database imported through an external API (e.g. YGOPRODeck).  
-  All card data and images are loaded via external URLs at runtime – **no card info or images are stored in this repository**, ensuring the project stays lightweight and legally unencumbered.  
+  All card data and images are loaded via external URLs at runtime – **no card images are stored in this repository**, ensuring the project stays lightweight and legally unencumbered.  
 - **Online Lobby** – Meet and chat with fellow duelists in an online lobby. Set up matches, discuss strategies, or just hang out before you draw your next card in battle.  
 
 ---
@@ -29,7 +29,7 @@ It provides an interactive platform for friendly duels and showcases real-time g
 
 This is a **fan-made project** created for educational purposes and personal enjoyment.  
 It is **not affiliated with or endorsed by Konami** or the official Yu-Gi-Oh! franchise in any way.  
-All Yu-Gi-Oh! characters, cards, and names are trademarks of their respective owners.  
+All Yu-Gi-Oh! cards, and names are trademarks of their respective owners.  
 
 ---
 
