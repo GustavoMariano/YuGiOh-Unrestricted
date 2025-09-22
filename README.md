@@ -1,5 +1,7 @@
 # YuGiOh-Unrestricted
 
+[English](README.md) | [Português](README.pt-BR.md)
+
 **YuGiOh-Unrestricted** is a personal learning project that simulates a multiplayer **Yu-Gi-Oh!** card game using .NET 7 web technologies.  
 The project is driven by nostalgia for the classic Yu-Gi-Oh! TCG and a desire to learn multiplayer game development.  
 It provides an interactive platform for friendly duels and showcases real-time gameplay features built with Blazor Server, SignalR, and EF Core in a fun, nostalgic context.
