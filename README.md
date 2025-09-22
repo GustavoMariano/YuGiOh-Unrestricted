@@ -1,8 +1,8 @@
 # YuGiOh-Unrestricted
 
-**YuGiOh-Unrestricted** is a personal learning project that simulates a multiplayer **Yu-Gi-Oh!** card game using modern .NET 7 web technologies.  
+**YuGiOh-Unrestricted** is a personal learning project that simulates a multiplayer **Yu-Gi-Oh!** card game using .NET 7 web technologies.  
 The project is driven by nostalgia for the classic Yu-Gi-Oh! TCG and a desire to learn multiplayer game development.  
-It provides an interactive platform for friendly duels and showcases real-time gameplay features built with cutting-edge web tech in a fun, nostalgic context.
+It provides an interactive platform for friendly duels and showcases real-time gameplay features built with Blazor Server, SignalR, and EF Core in a fun, nostalgic context.
 
 The **“Unrestricted”** name highlights the freedom given to players: instead of enforcing a single official banlist or format, the system lets players define their own rules.  
 They can decide which generations of cards, custom restrictions, or house rules to apply, coordinating these agreements through any external communication channel of their choice.
@@ -25,6 +25,22 @@ They can decide which generations of cards, custom restrictions, or house rules 
 - **Blazor Server** – Interactive front-end UI created using Blazor Server templates in .NET 7.0, allowing rich dynamic web pages using C# and Razor.  
 - **SignalR** – Real-time communication library for handling live duel interactions (sends game updates instantly to all players, enabling synchronized gameplay).  
 - **Entity Framework Core (with SQLite)** – Handles server-side data persistence. A lightweight SQLite database is used to store card information (names, types, levels, ATK, DEF), user data, decks, and matches.  
+
+---
+
+## Inspiration
+
+One of the biggest motivations for creating this project came from my weekend duels at my brother’s house.  
+To celebrate that, here’s a fun AI-generated artwork of us:  
+
+<p align="center">
+  <img src="YuGiOh-Unrestricted/wwwroot/img/family-duel.jpg" alt="Family Duel Inspiration" width="700"/>
+</p>
+
+<p align="center">
+  <sub>Me as Kaiba | My brother’s wife as Mai Valentine | My brother as Yugi</sub><br>
+  <sub>*Image generated using AI*</sub>
+</p>
 
 ---
 
